@@ -8,6 +8,22 @@ from jose import jwt
 from passlib.context import CryptContext
 from dotenv import load_dotenv
 import os
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+origins = [
+    "http://localhost:3000",
+    "http://localhost:8080",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load environment variables
 load_dotenv()
@@ -19,32 +35,33 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # SQL statements to create tables
 tables = {
     "users": """
-        CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        login VARCHAR(50) UNIQUE NOT NULL,
-        password VARCHAR(100) NOT NULL,
-        username VARCHAR(100) NOT NULL,
-        status INTEGER DEFAULT 1);""",
-    "orders": """
-        CREATE TABLE IF NOT EXISTS orders (order_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        product_id INTEGER REFERENCES products(product_id),
-        user_id INTEGER REFERENCES users(user_id),
-        courier_id INTEGER REFERENCES couriers(courier_id),
-        quantity INTEGER NOT NULL,
-        status VARCHAR(50) DEFAULT 'Pending',
-        order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);""",
+        CREATE TABLE IF NOT EXISTS users (
+    user_id SERIAL PRIMARY KEY,
+    login VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    username VARCHAR(100) NOT NULL,
+    status INTEGER DEFAULT 1);""",
     "couriers": """
-        CREATE TABLE IF NOT EXISTS couriers (courier_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE IF NOT EXISTS couriers (courier_id SERIAL PRIMARY KEY,
         courier_name VARCHAR(100) NOT NULL,
         main_vehicle VARCHAR(50) NOT NULL,
         secondary_vehicle VARCHAR(50) DEFAULT NULL);""",
     "products": """
-        CREATE TABLE IF NOT EXISTS products (product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE IF NOT EXISTS products (product_id SERIAL PRIMARY KEY,
         product_name VARCHAR(100) NOT NULL,
         price DECIMAL(10, 2) NOT NULL,
         stock_quantity INTEGER NOT NULL,
-        rating DECIMAL(1, 1) DEFAULT NULL,
+        rating DECIMAL(2, 1) DEFAULT NULL,
         thumbnail VARCHAR(255) DEFAULT NULL,
-        photos_urls TEXT DEFAULT NULL);"""
+        photos_urls TEXT DEFAULT NULL);""",
+    "orders": """
+        CREATE TABLE IF NOT EXISTS orders (order_id SERIAL PRIMARY KEY,
+        product_id INTEGER REFERENCES products(product_id) ON DELETE SET NULL,
+        user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+        courier_id INTEGER REFERENCES couriers(courier_id) ON DELETE SET NULL,
+        quantity INTEGER NOT NULL,
+        status VARCHAR(50) DEFAULT 'Pending',
+        order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"""
 }
 
 # Initialize database tables
@@ -61,16 +78,14 @@ alogin = os.getenv('ADMIN_LOGIN')
 apassword = os.getenv('ADMIN_PASSWORD')
 conn = get_connection()
 cursor = conn.cursor()
-cursor.execute("SELECT login FROM users WHERE login = ?", (alogin,))
+cursor.execute("SELECT login FROM users WHERE login = %s", (alogin,))
 if not cursor.fetchone():
     hashed_password = pwd_context.hash(apassword)
-    cursor.execute("INSERT INTO users (login, password, username) VALUES (?, ?, ?)",
+    cursor.execute("INSERT INTO users (login, password, username) VALUES (%s, %s, %s)",
                     (alogin, hashed_password, 'Administrator'))
     conn.commit()
 cursor.close()
 conn.close()
-
-app = FastAPI()
 
 # Pydantic models
 class UserCreate(BaseModel):
@@ -136,14 +151,14 @@ def register(user: UserCreate):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT login FROM users WHERE login = ? OR username = ?", (user.login, user.username))
+        cursor.execute("SELECT login FROM users WHERE login = %s OR username = %s", (user.login, user.username))
         if cursor.fetchone():
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Login or username already in use")
         password_validation = validate_password(user.password)
         if not password_validation["v"]:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=password_validation["msg"])
         hashed_password = pwd_context.hash(user.password)
-        cursor.execute("INSERT INTO users (login, password, username) VALUES (?, ?, ?)",
+        cursor.execute("INSERT INTO users (login, password, username) VALUES (%s, %s, %s)",
                         (user.login, hashed_password, user.username))
         conn.commit()
         return JSONResponse(content={"message": "User registered successfully"})
@@ -159,7 +174,7 @@ def login(user: UserLogin):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT password FROM users WHERE login = ?", (user.login,))
+        cursor.execute("SELECT password FROM users WHERE login = %s", (user.login,))
         result = cursor.fetchone()
         if not result or not pwd_context.verify(user.password, result[0]):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
@@ -174,11 +189,11 @@ def delete_account(user: UserLogin):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT password FROM users WHERE login = ?", (user.login,))
+        cursor.execute("SELECT password FROM users WHERE login = %s", (user.login,))
         result = cursor.fetchone()
         if not result or not pwd_context.verify(user.password, result[0]):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-        cursor.execute("DELETE FROM users WHERE login = ?", (user.login,))
+        cursor.execute("DELETE FROM users WHERE login = %s", (user.login,))
         conn.commit()
         return JSONResponse(content={"message": "Account deleted successfully"})
     except Exception as e:
@@ -207,7 +222,7 @@ def get_users_admin_token(token: Token, page: int = 1, per_page: int = 10):
         total = cursor.fetchone()[0]
         
         offset = (page - 1) * per_page
-        cursor.execute("SELECT user_id, login, username, status FROM users LIMIT ? OFFSET ?", (per_page, offset))
+        cursor.execute("SELECT user_id, login, username, status FROM users LIMIT %s OFFSET %s", (per_page, offset))
         users = cursor.fetchall()
         users_list = [{"user_id": u[0], "login": u[1], "username": u[2], "status": u[3]} for u in users]
         return JSONResponse(content={"users": users_list, "total": total, "page": page, "per_page": per_page}, status_code=status.HTTP_200_OK)
@@ -229,10 +244,10 @@ def ban_user(token: Token, user_id: int):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT user_id FROM users WHERE user_id = ?", (user_id,))
+        cursor.execute("SELECT user_id FROM users WHERE user_id = %s", (user_id,))
         if not cursor.fetchone():
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-        cursor.execute("UPDATE users SET status = 0 WHERE user_id = ?", (user_id,))
+        cursor.execute("UPDATE users SET status = 0 WHERE user_id = %s", (user_id,))
         conn.commit()
         return JSONResponse(content={"message": "User banned successfully", "user_id": user_id}, status_code=status.HTTP_200_OK)
     except Exception as e:
@@ -256,10 +271,10 @@ def unban_user(token: Token, user_id: int):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT user_id FROM users WHERE user_id = ?", (user_id,))
+        cursor.execute("SELECT user_id FROM users WHERE user_id = %s", (user_id,))
         if not cursor.fetchone():
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-        cursor.execute("UPDATE users SET status = 1 WHERE user_id = ?", (user_id,))
+        cursor.execute("UPDATE users SET status = 1 WHERE user_id = %s", (user_id,))
         conn.commit()
         return JSONResponse(content={"message": "User unbanned successfully", "user_id": user_id}, status_code=status.HTTP_200_OK)
     except Exception as e:
@@ -287,7 +302,7 @@ def get_order_admin(token: Token, page: int = 1, per_page: int = 10):
         total = cursor.fetchone()[0]
         
         offset = (page - 1) * per_page
-        cursor.execute("SELECT order_id, product_id, user_id, courier_id, quantity, status, order_date FROM orders LIMIT ? OFFSET ?", (per_page, offset))
+        cursor.execute("SELECT order_id, product_id, user_id, courier_id, quantity, status, order_date FROM orders LIMIT %s OFFSET %s", (per_page, offset))
         orders = cursor.fetchall()
         orders_list = [{"order_id": o[0], "product_id": o[1], "user_id": o[2], "courier_id": o[3],
                         "quantity": o[4], "status": o[5], "order_date": o[6]} for o in orders]
@@ -314,7 +329,7 @@ def get_couriers_admin(token: Token, page: int = 1, per_page: int = 10):
         total = cursor.fetchone()[0]
         
         offset = (page - 1) * per_page
-        cursor.execute("SELECT courier_id, courier_name, main_vehicle, secondary_vehicle FROM couriers LIMIT ? OFFSET ?", (per_page, offset))
+        cursor.execute("SELECT courier_id, courier_name, main_vehicle, secondary_vehicle FROM couriers LIMIT %s OFFSET %s", (per_page, offset))
         couriers = cursor.fetchall()
         couriers_list = [{"courier_id": c[0], "courier_name": c[1], "main_vehicle": c[2],
                         "secondary_vehicle": c[3]} for c in couriers]
@@ -341,10 +356,10 @@ def get_products_admin(token: Token, page: int = 1, per_page: int = 10):
         total = cursor.fetchone()[0]
         
         offset = (page - 1) * per_page
-        cursor.execute("SELECT product_id, product_name, price, stock_quantity, rating, thumbnail, photos_urls FROM products LIMIT ? OFFSET ?",
+        cursor.execute("SELECT product_id, product_name, price, stock_quantity, rating, thumbnail, photos_urls FROM products LIMIT %s OFFSET %s",
                        (per_page, offset))
         products = cursor.fetchall()
-        products_list = [{"product_id": p[0], "product_name": p[1], "price": p[2],
+        products_list = [{"product_id": p[0], "product_name": p[1], "price": float(p[2]),
                         "stock_quantity": p[3], "rating": p[4], "thumbnail": p[5], "photos_urls": p[6]} for p in products]
         return JSONResponse(content={"products": products_list, "total": total, "page": page, "per_page": per_page}, status_code=status.HTTP_200_OK)
     finally:
@@ -363,7 +378,7 @@ def add_product(product: ProductCreate):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT product_id FROM products WHERE product_name = ?", (product.product_name,))
+    cursor.execute("SELECT product_id FROM products WHERE product_name = %s", (product.product_name,))
     if cursor.fetchone():
         cursor.close()
         conn.close()
@@ -371,7 +386,7 @@ def add_product(product: ProductCreate):
     cursor.close()
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT INTO products (product_name, price, stock_quantity, rating, thumbnail, photos_urls) VALUES (?, ?, ?, ?, ?, ?)",
+        cursor.execute("INSERT INTO products (product_name, price, stock_quantity, rating, thumbnail, photos_urls) VALUES (%s, %s, %s, %s, %s, %s)",
                         (product.product_name, product.price, product.stock_quantity, product.rating, product.thumbnail, product.photos_urls))
         conn.commit()
         return JSONResponse(content={"message": "Product added successfully", "product_id": cursor.lastrowid})
@@ -394,7 +409,7 @@ def delete_product(product: ProductDelete):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     conn = get_connection()
     cursor = conn.cursor()
-    result = cursor.execute("SELECT product_id FROM products WHERE product_id = ?", (product.product_id,))
+    result = cursor.execute("SELECT product_id FROM products WHERE product_id = %s", (product.product_id,))
     if not result.fetchone():
         cursor.close()
         conn.close()
@@ -402,7 +417,7 @@ def delete_product(product: ProductDelete):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("DELETE FROM products WHERE product_id = ?", (product.product_id,))
+        cursor.execute("DELETE FROM products WHERE product_id = %s", (product.product_id,))
         conn.commit()
         return JSONResponse(content={"message": "Product deleted successfully", "product_id": product.product_id})
     except Exception as e:

@@ -1,10 +1,11 @@
 import './App.css';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
+import Register from './Components/Login/Register.jsx';
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<div>Home</div>} />
+      <Route path="/reg" element={<Register />} />
     </Routes>
   );
 }
