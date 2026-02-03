@@ -1,5 +1,5 @@
 import "./Login.css";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -40,8 +40,12 @@ function Login() {
       const warnscol = document.getElementsByClassName('warn');
       const warns = [...warnscol];
       warns.forEach(warn => {
-        warn.style.display = 'none';
+        warn.addEventListener('webkitAnimationEnd', () => {
+          warn.classList.remove('anim');
+          warn.style.display = 'none';
+        });
         warn.classList.remove('anim');
+        warn.style.display = 'none';
       });
       if (!login) {
         warns[0].style.display = 'inline';
