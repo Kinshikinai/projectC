@@ -1,11 +1,11 @@
 import './App.css';
 import { Routes, Route } from 'react-router-dom';
-import Register from './Components/Login/Register.jsx';
+import RegLog from './Components/Login/RegLog.jsx';
 
 function App() {
   return (
     <Routes>
-      <Route path="/reg" element={<Register />} />
+      <Route path="/reglog" element={<RegLog />} />
     </Routes>
   );
 }

@@ -153,10 +153,10 @@ def register(user: UserCreate):
     try:
         cursor.execute("SELECT login FROM users WHERE login = %s OR username = %s", (user.login, user.username))
         if cursor.fetchone():
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Login or username already in use")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Login or username already in use")
         password_validation = validate_password(user.password)
         if not password_validation["v"]:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=password_validation["msg"])
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=password_validation["msg"])
         hashed_password = pwd_context.hash(user.password)
         cursor.execute("INSERT INTO users (login, password, username) VALUES (%s, %s, %s)",
                         (user.login, hashed_password, user.username))
