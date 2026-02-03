@@ -129,15 +129,15 @@ def create_access_token(data: dict):
 
 def validate_password(password: str) -> {str, bool}:
     if len(password) < 8:
-        return {"msg": "Password must be at least 8 characters long", "v": False}
+        return {"msg": "!Password must be at least 8 characters long", "v": False}
     if not any(c.isupper() for c in password):
-        return {"msg": "Password must contain at least one uppercase letter", "v": False}
+        return {"msg": "!Password must contain at least one uppercase letter", "v": False}
     if not any(c.islower() for c in password):
-        return {"msg": "Password must contain at least one lowercase letter", "v": False}
+        return {"msg": "!Password must contain at least one lowercase letter", "v": False}
     if not any(c.isdigit() for c in password):
-        return {"msg": "Password must contain at least one digit", "v": False}
+        return {"msg": "!Password must contain at least one digit", "v": False}
     if not any(not c.isalnum() for c in password):
-        return {"msg": "Password must contain at least one special character", "v": False}
+        return {"msg": "!Password must contain at least one special character", "v": False}
     return {"msg": "Password is valid", "v": True}
 
 # API Endpoints
@@ -161,7 +161,7 @@ def register(user: UserCreate):
         cursor.execute("INSERT INTO users (login, password, username) VALUES (%s, %s, %s)",
                         (user.login, hashed_password, user.username))
         conn.commit()
-        return JSONResponse(content={"message": "User registered successfully"})
+        return JSONResponse(content={"message": "User registered successfully", "success": True})
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -229,6 +229,32 @@ def get_users_admin_token(token: Token, page: int = 1, per_page: int = 10):
     finally:
         cursor.close()
         conn.close()
+
+@app.delete('/admin/delete-account', status_code=status.HTTP_200_OK)
+def delete_account(user_id: int, token: Token):
+    try:
+        payload = jwt.decode(token.token, SECRET_KEY, algorithms=[ALGORITHM])
+        login = payload.get("sub")
+        alogin = os.getenv('ADMIN_LOGIN')
+        if login != alogin:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin credentials")
+    except jwt.JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM users WHERE user_id = %s", (user_id,))
+        if cursor.fetchone():
+            return JSONResponse(content={"message": "Account deleted successfully"})
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
 
 @app.post('/admin/ban', status_code=status.HTTP_200_OK)
 def ban_user(token: Token, user_id: int):
