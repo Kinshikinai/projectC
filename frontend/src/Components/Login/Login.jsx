@@ -94,7 +94,8 @@ function Login() {
       }
 
     return (
-      <div className={`auth-container`}>
+      <div className="reg">
+        <div className={`auth-container`}>
         <span onClick={() => {reglogswap()}}>Login</span>
         <input type="text" onChange={(e) => {setLogin(e.target.value)}} value={login} placeholder="Login"/>
         <p className="warn"></p>
@@ -104,6 +105,7 @@ function Login() {
           <span onClick={() => {setPass(!Pass)}}>{Pass ? "X" : "O"}</span>  
         </div>
         <button onClick={() => {loginin()}}>Proceed</button>
+      </div>
       </div>
     );
 }

@@ -8,7 +8,10 @@ function Feed() {
 
     return (
         <div className="feed">
-            
+            <div className="header">
+                <div>A</div>
+                <div>B</div>
+            </div>
         </div>
     )
 }

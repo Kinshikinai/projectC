@@ -1,9 +1,40 @@
-#root {
+/* Phone */
+/* Colors
+    bright - DDEB9D rgb(221, 235, 157)
+    less bright - A0C878 rgb(160, 200, 120)
+    dark - 27667B rgb(39, 102, 123)
+    darkest - 143D60 rgb(20, 61, 96)
+*/
+
+.feed {
     background-color: #27667B;
-    display: block;
+    display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     position: relative;
     z-index: 0;
+    width: 100wh;
+    height: 100vh;
+}
+
+.feed .header {
+    display: none;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+    
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+    .feed .header {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        width: 100%;
+        background-color: rgba(255, 255, 255, 0.8);
+        height: auto;
+        padding: 20px;
+    }
 }

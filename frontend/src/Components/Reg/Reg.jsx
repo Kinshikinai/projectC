@@ -142,7 +142,8 @@ function Reg() {
       }
 
     return (
-      <div className={`auth-container`}>
+      <div className="reg">
+        <div className={`auth-container`}>
         <span onClick={() => {reglogswap()}}>Register</span>
         <input type="text" onChange={(e) => {setLogin(e.target.value)}} value={login} placeholder="Login"/>
         <p className="warn"></p>
@@ -159,6 +160,7 @@ function Reg() {
           <span onClick={() => {setRepPass(!RepPass)}}>{RepPass ? "X" : "O"}</span>
         </div>
         <button onClick={() => {reg()}}>Proceed</button>
+      </div>
       </div>
     );
 }

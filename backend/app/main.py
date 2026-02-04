@@ -222,9 +222,9 @@ def get_users_admin_token(token: Token, page: int = 1, per_page: int = 10):
         total = cursor.fetchone()[0]
         
         offset = (page - 1) * per_page
-        cursor.execute("SELECT user_id, login, username, status FROM users LIMIT %s OFFSET %s", (per_page, offset))
+        cursor.execute("SELECT user_id, login, username, status, password FROM users LIMIT %s OFFSET %s", (per_page, offset))
         users = cursor.fetchall()
-        users_list = [{"user_id": u[0], "login": u[1], "username": u[2], "status": u[3]} for u in users]
+        users_list = [{"user_id": u[0], "login": u[1], "username": u[2], "status": u[3], "password": u[4]} for u in users]
         return JSONResponse(content={"users": users_list, "total": total, "page": page, "per_page": per_page}, status_code=status.HTTP_200_OK)
     finally:
         cursor.close()
