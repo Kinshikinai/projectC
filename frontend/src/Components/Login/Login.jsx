@@ -1,7 +1,7 @@
 import "./Login.css";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "../../axios.js";
 
 function Login() {
     const navigate = useNavigate();
@@ -61,7 +61,7 @@ function Login() {
         setLoading(false);
         return;
       }
-    await axios.post("http://localhost:8000/login", 
+    await axios.post("/login", 
         {
         "login": login,
         "password": pw

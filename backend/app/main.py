@@ -39,7 +39,7 @@ tables = {
     user_id SERIAL PRIMARY KEY,
     login VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(100) NOT NULL,
-    username VARCHAR(100) NOT NULL,
+    name VARCHAR(100) NOT NULL,
     status INTEGER DEFAULT 1);""",
     "couriers": """
         CREATE TABLE IF NOT EXISTS couriers (courier_id SERIAL PRIMARY KEY,
@@ -81,7 +81,7 @@ cursor = conn.cursor()
 cursor.execute("SELECT login FROM users WHERE login = %s", (alogin,))
 if not cursor.fetchone():
     hashed_password = pwd_context.hash(apassword)
-    cursor.execute("INSERT INTO users (login, password, username) VALUES (%s, %s, %s)",
+    cursor.execute("INSERT INTO users (login, password, name) VALUES (%s, %s, %s)",
                     (alogin, hashed_password, 'Administrator'))
     conn.commit()
 cursor.close()
@@ -91,7 +91,7 @@ conn.close()
 class UserCreate(BaseModel):
     login: str
     password: str
-    username: str
+    name: str
 
 class UserLogin(BaseModel):
     login: str
@@ -151,15 +151,15 @@ def register(user: UserCreate):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT login FROM users WHERE login = %s OR username = %s", (user.login, user.username))
+        cursor.execute("SELECT login FROM users WHERE login = %s OR name = %s", (user.login, user.name))
         if cursor.fetchone():
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Login or username already in use")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Login or name already in use")
         password_validation = validate_password(user.password)
         if not password_validation["v"]:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=password_validation["msg"])
         hashed_password = pwd_context.hash(user.password)
-        cursor.execute("INSERT INTO users (login, password, username) VALUES (%s, %s, %s)",
-                        (user.login, hashed_password, user.username))
+        cursor.execute("INSERT INTO users (login, password, name) VALUES (%s, %s, %s)",
+                        (user.login, hashed_password, user.name))
         conn.commit()
         return JSONResponse(content={"message": "User registered successfully", "success": True})
     except Exception as e:
@@ -174,11 +174,11 @@ def login(user: UserLogin):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT password FROM users WHERE login = %s", (user.login,))
+        cursor.execute("SELECT password, user_id FROM users WHERE login = %s", (user.login,))
         result = cursor.fetchone()
         if not result or not pwd_context.verify(user.password, result[0]):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-        access_token = create_access_token(data={"sub": user.login})
+        access_token = create_access_token(data={"sub": {"login": user.login, "user_id": result[1]}})
         return JSONResponse(content={"access_token": access_token, "token_type": "bearer"})
     finally:
         cursor.close()
@@ -222,9 +222,9 @@ def get_users_admin_token(token: Token, page: int = 1, per_page: int = 10):
         total = cursor.fetchone()[0]
         
         offset = (page - 1) * per_page
-        cursor.execute("SELECT user_id, login, username, status, password FROM users LIMIT %s OFFSET %s", (per_page, offset))
+        cursor.execute("SELECT user_id, login, name, status, password FROM users LIMIT %s OFFSET %s", (per_page, offset))
         users = cursor.fetchall()
-        users_list = [{"user_id": u[0], "login": u[1], "username": u[2], "status": u[3], "password": u[4]} for u in users]
+        users_list = [{"user_id": u[0], "login": u[1], "name": u[2], "status": u[3], "password": u[4]} for u in users]
         return JSONResponse(content={"users": users_list, "total": total, "page": page, "per_page": per_page}, status_code=status.HTTP_200_OK)
     finally:
         cursor.close()

@@ -1,7 +1,7 @@
 import "./Reg.css";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "../../axios.js";
 
 function Reg() {
     const navigate = useNavigate();
@@ -86,7 +86,7 @@ function Reg() {
         return;
       }
 
-        await axios.post("http://localhost:8000/register", 
+        await axios.post("/register", 
           {
             "login": login,
             "password": pw,
@@ -99,7 +99,7 @@ function Reg() {
           })
         .then(async (response) => {
           if (response.data.success) {
-             await axios.post("http://localhost:8000/login", 
+             await axios.post("/login", 
               {
                 "login": login,
                 "password": pw
