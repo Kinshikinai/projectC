@@ -16,10 +16,10 @@ function Reg() {
 
     useEffect(() => {
       if (loading) {
-        document.querySelector('.loadoverlay').style.display = 'flex';
+        document.querySelector('.loadoverlay').classList.add('active');
       }
       else {
-        document.querySelector('.loadoverlay').style.display = 'none';
+        document.querySelector('.loadoverlay').classList.remove('active');
       }
     }, [loading]);
 
@@ -90,7 +90,7 @@ function Reg() {
           {
             "login": login,
             "password": pw,
-            "username": un
+            "name": un
           },
           {
             headers: {
@@ -152,12 +152,12 @@ function Reg() {
         <div>
           <input type={Pass ? "password" : "text"} onChange={(e) => {setPw(e.target.value)}} value={pw} placeholder="Password"/>
           <p className="warn"></p>
-          <span onClick={() => {setPass(!Pass)}}>{Pass ? "X" : "O"}</span>  
+          <span className="material-symbols-outlined" onClick={() => {setPass(!Pass)}}>{Pass ? "visibility_off" : "visibility"}</span>  
         </div>
         <div>
           <input type={RepPass ? "password" : "text"} onChange={(e) => {setRepPw(e.target.value)}} value={reppw} placeholder="Repeat password"/>
           <p className="warn"></p>
-          <span onClick={() => {setRepPass(!RepPass)}}>{RepPass ? "X" : "O"}</span>
+          <span className="material-symbols-outlined" onClick={() => {setRepPass(!RepPass)}}>{RepPass ? "visibility_off" : "visibility"}</span>
         </div>
         <button onClick={() => {reg()}}>Proceed</button>
       </div>

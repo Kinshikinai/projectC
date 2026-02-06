@@ -102,7 +102,7 @@ function Login() {
         <div>
           <input type={Pass ? "password" : "text"} onChange={(e) => {setPw(e.target.value)}} value={pw} placeholder="Password"/>
           <p className="warn"></p>
-          <span onClick={() => {setPass(!Pass)}}>{Pass ? "X" : "O"}</span>  
+          <span className="material-symbols-outlined" onClick={() => {setPass(!Pass)}}>{Pass ? "visibility_off" : "visibility"}</span>  
         </div>
         <button onClick={() => {loginin()}}>Proceed</button>
       </div>

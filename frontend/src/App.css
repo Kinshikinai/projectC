@@ -5,6 +5,24 @@
   box-sizing: border-box;
   font-family: 'Montserrat';
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+html::-webkit-scrollbar {
+    background-color: white;
+    width: 4px;
+}
+
+html::-webkit-scrollbar-thumb {
+    background-color: black;
+}
+
+html::-webkit-scrollbar-button {
+    width: 4px;
+}
+
 #root {
   width: 100wh;
   height: 100vh;

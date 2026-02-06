@@ -6,6 +6,7 @@
     darkest - 143D60 rgb(20, 61, 96)
 */
 
+
 #root {
     height: fit-content;
 }
@@ -19,6 +20,7 @@
     z-index: 0;
     width: 100wh;
     height: fit-content;
+    min-height: 100vh;
 }
 
 .feed .header {
@@ -207,12 +209,12 @@
     }
 
     .feed .strip p {
-        width: 34%;
+        width: 44%;
     }
 
     .feed .strip p:nth-child(1) {
         font-weight: 900;
-        font-size: 12rem;
+        font-size: 10rem;
         color: white;
     }
 
@@ -262,8 +264,60 @@
         cursor: pointer;
         color: black;
     }
+    
+    .feed .search span {
+        width: fit-content;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
 
-    .feed .catalogs {
+    .feed .search span p {
+        font-size: 1.2rem;
+        font-weight: 400;
+    }
+
+    .feed .search span select {
+        padding: 4px 6px;
+        font-size: 1rem;
+        font-weight: 500;
+    }
+
+    .feed .search span div {
+        border: 2px solid black;
+        width: 24px;
+        height: 24px;
+        rotate: 45deg;
+        cursor: pointer;
+        transition: .15s;
+    }
+
+    .feed .search span div.active {
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+
+    .feed .search .arrowup {
+        margin-left: -10px;
+    }
+
+    .feed .search .arrowdown, .arrowup {
+        cursor: pointer;
+        filter: contrast(0.2);
+        user-select: none;
+    }
+
+    .feed .search .arrowdown:hover, .arrowup:hover {
+        filter: contrast(1);
+    }
+
+    .feed .search .arrowdown.active, .arrowup.active {
+        filter: contrast(1);
+    }
+
+    .feed .products {
+        position: relative;
         margin-top: 20px;
         width: 84%;
         height: fit-content;
@@ -277,7 +331,12 @@
         border: 2px solid black;
     }
 
-    .feed .catalogs .productcard {
+    .feed .products > .loadoverlay {
+        width: 100%;
+        height: 100%;
+    }
+
+    .feed .products .productcard {
         background: white;
         height: 400px;
         padding: 16px;
@@ -286,7 +345,7 @@
         transition: .15s;
     }
 
-    .feed .catalogs .productcard:hover {
+    .feed .products .productcard:hover {
         transform: scale(1.01);
         box-shadow: 0 12px 10px rgba(255,255,255,0.4);
     }

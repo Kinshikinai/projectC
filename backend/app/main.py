@@ -52,8 +52,7 @@ tables = {
         price DECIMAL(10, 2) NOT NULL,
         stock_quantity INTEGER NOT NULL,
         rating DECIMAL(2, 1) DEFAULT NULL,
-        thumbnail VARCHAR(255) DEFAULT NULL,
-        photos_urls TEXT DEFAULT NULL);""",
+        thumbnail VARCHAR(255) DEFAULT NULL);""",
     "orders": """
         CREATE TABLE IF NOT EXISTS orders (order_id SERIAL PRIMARY KEY,
         product_id INTEGER REFERENCES products(product_id) ON DELETE SET NULL,
@@ -107,9 +106,8 @@ class ProductCreate(BaseModel):
     product_name: str
     price: float
     stock_quantity: int
-    rating: float = None
-    thumbnail: str = None
-    photos_urls: str = None
+    rating: float = 0.0
+    thumbnail: str = ""
     token: str
 
 class ProductDelete(BaseModel):
@@ -178,7 +176,7 @@ def login(user: UserLogin):
         result = cursor.fetchone()
         if not result or not pwd_context.verify(user.password, result[0]):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-        access_token = create_access_token(data={"sub": {"login": user.login, "user_id": result[1]}})
+        access_token = create_access_token(data={"sub": user.login})
         return JSONResponse(content={"access_token": access_token, "token_type": "bearer"})
     finally:
         cursor.close()
@@ -365,29 +363,18 @@ def get_couriers_admin(token: Token, page: int = 1, per_page: int = 10):
         conn.close()
 
 @app.post('/admin/products', status_code=status.HTTP_200_OK)
-def get_products_admin(token: Token, page: int = 1, per_page: int = 10):
-    try:
-        payload = jwt.decode(token.token, SECRET_KEY, algorithms=[ALGORITHM])
-        login = payload.get("sub")
-        alogin = os.getenv('ADMIN_LOGIN')
-        if login != alogin:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin credentials")
-    except jwt.JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    
+def get_products_admin():
     conn = get_connection()
     cursor = conn.cursor()
     try:
         cursor.execute("SELECT COUNT(*) FROM products")
         total = cursor.fetchone()[0]
         
-        offset = (page - 1) * per_page
-        cursor.execute("SELECT product_id, product_name, price, stock_quantity, rating, thumbnail, photos_urls FROM products LIMIT %s OFFSET %s",
-                       (per_page, offset))
+        cursor.execute("SELECT product_id, product_name, price, stock_quantity, rating, thumbnail FROM products")
         products = cursor.fetchall()
         products_list = [{"product_id": p[0], "product_name": p[1], "price": float(p[2]),
-                        "stock_quantity": p[3], "rating": p[4], "thumbnail": p[5], "photos_urls": p[6]} for p in products]
-        return JSONResponse(content={"products": products_list, "total": total, "page": page, "per_page": per_page}, status_code=status.HTTP_200_OK)
+                        "stock_quantity": p[3], "rating": float(p[4]), "thumbnail": p[5]} for p in products]
+        return JSONResponse(content={"products": products_list, "total": total}, status_code=status.HTTP_200_OK)
     finally:
         cursor.close()
         conn.close()
@@ -412,8 +399,8 @@ def add_product(product: ProductCreate):
     cursor.close()
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT INTO products (product_name, price, stock_quantity, rating, thumbnail, photos_urls) VALUES (%s, %s, %s, %s, %s, %s)",
-                        (product.product_name, product.price, product.stock_quantity, product.rating, product.thumbnail, product.photos_urls))
+        cursor.execute("INSERT INTO products (product_name, price, stock_quantity, rating, thumbnail) VALUES (%s, %s, %s, %s, %s)",
+                        (product.product_name, product.price, product.stock_quantity, product.rating, product.thumbnail))
         conn.commit()
         return JSONResponse(content={"message": "Product added successfully", "product_id": cursor.lastrowid})
     except Exception as e:
