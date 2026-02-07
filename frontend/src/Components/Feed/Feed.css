@@ -209,7 +209,7 @@
     }
 
     .feed .strip p {
-        width: 44%;
+        width: 30%;
     }
 
     .feed .strip p:nth-child(1) {
@@ -338,15 +338,38 @@
 
     .feed .products .productcard {
         background: white;
-        height: 400px;
+        height: fit-content;
         padding: 16px;
         border-radius: 12px;
         box-shadow: 0 10px 10px rgba(255,255,255,0.4);
         transition: .15s;
+        cursor: pointer;
+    }
+
+    .feed .products .productcard.active {
+        animation: productcardflipover 1s ease-in-out 1 forwards;
+    }
+
+    @keyframes productcardflipover {
+        from {
+            transform: rotate3d(0, 1, 0, 0deg);
+        }
+        to {
+            transform: rotate3d(0, 1, 0, 180deg);
+        }
     }
 
     .feed .products .productcard:hover {
         transform: scale(1.01);
         box-shadow: 0 12px 10px rgba(255,255,255,0.4);
+    }
+
+    .feed .products .productcard img {
+        width: 100%;
+        aspect-ratio: 3/4;
+    }
+
+    .feed .products .productcard .name {
+        font-weight: 600;
     }
 }

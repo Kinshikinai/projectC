@@ -144,7 +144,11 @@ function Reg() {
     return (
       <div className="reg">
         <div className={`auth-container`}>
-        <span onClick={() => {reglogswap()}}>Register</span>
+        <span onClick={() => {reglogswap()}}>
+          <span class="material-symbols-outlined">
+            ads_click
+          </span>
+          Register</span>
         <input type="text" onChange={(e) => {setLogin(e.target.value)}} value={login} placeholder="Login"/>
         <p className="warn"></p>
         <input type="text" onChange={(e) => {setUn(e.target.value)}} value={un} placeholder="Username" />

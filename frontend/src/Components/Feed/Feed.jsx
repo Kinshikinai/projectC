@@ -21,7 +21,7 @@ function Feed() {
             token: document.cookie.split(";")[0].split('=')[1]
         })
         .then(res => {
-            const sorted = [...res.data.products].sort((a, b) => b.stock_quantity - a.stock_quantity);
+            const sorted = [...res.data.products].sort((a, b) => b.price - a.price);
             setProducts(sorted);
             setLoadingProducts(false);
         })
@@ -84,7 +84,7 @@ function Feed() {
     return (
         <div className="feed">
             <div className="header">
-                <span className="logo"><a href="/feed">NIGAMart</a></span>
+                <span className="logo"><a href="/feed">LOGO</a></span>
                 <span className="center">
                     <ul>
                         <li><a href="/feed" onClick={(e) => {e.preventDefault();if (products.length > 8) document.getElementById("search").scrollIntoView({ behavior: 'smooth' });setSortByValue('Rating');setSortDown(true);console.log(sortByValue);}}>Тренд</a></li>
@@ -109,7 +109,7 @@ function Feed() {
                 </span>
             </div>
             <div className="strip">
-                <p>NIGAMart</p>
+                <p>LOGO</p>
                 <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam dolorem modi, nobis in qui molestiae totam illo id pariatur ut perferendis eius alias rerum saepe obcaecati? Assumenda minima non unde?</p>
             </div>
             <div className="search" id="search">
@@ -153,8 +153,9 @@ function Feed() {
                     <div className="spinner"></div>
                 </div>
                 {products.map(p => (
-                    <div key={p.product_id} className="productcard">
-                        <p className="name">{p.product_name}</p>
+                    <div key={p.product_id} className="productcard" id={"productcard" + p.product_id} onClick={(e) => {document.getElementById("productcard" + p.product_id).classList.add('active')}}>
+                        <img src="/src/imgs/CSatHFW_Limp_Bizkit.jpg" alt="" />
+                        <p className="name">{p?.product_name?.length > 35 ? p?.product_name?.slice(0, 35).trim() + "..." : p?.product_name}</p>
                         <p className="price">{p.price}</p>
                         <p className="quantity">{p.stock_quantity}</p>
                         <p className="rating">{p.rating}</p>

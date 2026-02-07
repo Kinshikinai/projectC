@@ -96,7 +96,11 @@ function Login() {
     return (
       <div className="reg">
         <div className={`auth-container`}>
-        <span onClick={() => {reglogswap()}}>Login</span>
+        <span onClick={() => {reglogswap()}}>
+          <span class="material-symbols-outlined">
+            ads_click
+          </span>
+          Login</span>
         <input type="text" onChange={(e) => {setLogin(e.target.value)}} value={login} placeholder="Login"/>
         <p className="warn"></p>
         <div>
