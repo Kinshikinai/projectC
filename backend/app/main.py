@@ -362,8 +362,8 @@ def get_couriers_admin(token: Token, page: int = 1, per_page: int = 10):
         cursor.close()
         conn.close()
 
-@app.post('/admin/products', status_code=status.HTTP_200_OK)
-def get_products_admin():
+@app.get('/products', status_code=status.HTTP_200_OK)
+def get_products():
     conn = get_connection()
     cursor = conn.cursor()
     try:

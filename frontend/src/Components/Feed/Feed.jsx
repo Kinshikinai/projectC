@@ -14,12 +14,14 @@ function Feed() {
     const [products, setProducts] = useState([{}]);
     const [loadingProducts, setLoadingProducts] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [cartOverlay, setCartOverlay] = useState(false);
+    const [hideHeader, setHideHeader] = useState(false);
+    const [headerClasses, setHeaderClasses] = useState("");
+    const lorem = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Veritatis tenetur culpa debitis provident unde architecto rerum sit sunt dolores repudiandae mollitia facilis labore ipsa beatae, soluta in? Porro, ratione quos!";
 
     useEffect(() => {
         setLoadingProducts(true);
-        axios.post('/admin/products', {
-            token: document.cookie.split(";")[0].split('=')[1]
-        })
+        axios.get('/products')
         .then(res => {
             const sorted = [...res.data.products].sort((a, b) => b.price - a.price);
             setProducts(sorted);
@@ -46,9 +48,11 @@ function Feed() {
             if (sticky.getBoundingClientRect().top <= 80) {
                 sticky.classList.add('stuck');
                 header.classList.add('hide');
+                setHideHeader(true);
             } else {
                 sticky.classList.remove('stuck');
                 header.classList.remove('hide');
+                setHideHeader(false);
             }
         });
         const sortby = document.getElementById("sortby");
@@ -83,12 +87,28 @@ function Feed() {
 
     return (
         <div className="feed">
-            <div className="header">
+            <div className={cartOverlay ? "cartoverlay active" : "cartoverlay"} id="cartoverlay">
+                CART
+            </div>
+            <span className={cartOverlay ? "material-icons cart active" : "material-icons cart"} onClick={() => {
+                setCartOverlay(!cartOverlay);
+                let headerclasses = "";
+                if (!cartOverlay) {
+                    headerclasses = headerclasses + " shrink";
+                }
+                if (hideHeader) {
+                    headerclasses = headerclasses + " hide";
+                }
+                setHeaderClasses(headerclasses);
+            }}>
+                shopping_cart
+            </span>
+            <div className={"header" + headerClasses}>
                 <span className="logo"><a href="/feed">LOGO</a></span>
                 <span className="center">
                     <ul>
-                        <li><a href="/feed" onClick={(e) => {e.preventDefault();if (products.length > 8) document.getElementById("search").scrollIntoView({ behavior: 'smooth' });setSortByValue('Rating');setSortDown(true);console.log(sortByValue);}}>Тренд</a></li>
-                        <li><a href="/catalog" onClick={(e) => {e.preventDefault();navigate('/catalog')}}>Категории</a></li>
+                        <li><a href="/feed" onClick={(e) => {e.preventDefault();if (products.length > 8) document.getElementById("search").scrollIntoView({ behavior: 'smooth' });}}>Искать</a></li>
+                        <li><a href="#catalogs" onClick={(e) => {e.preventDefault();window.scrollTo(XMLDocument, document.getElementById('catalogs').scrollHeight - 230)}}>Категории</a></li>
                         <li><a href="/supp" onClick={(e) => {e.preventDefault();navigate('/supp')}}>Поддержка</a></li>
                     </ul>
                 </span>
@@ -98,12 +118,19 @@ function Feed() {
                         <p className="n">{name}</p>
                         <div className="arrowdown" onClick={(e) => {setProfileActive(!profileActive);}}></div>
                         <ul className={profileActive ? 'profiledropdown active' : 'profiledropdown'}>
-                            <li onClick={() => {navigate('/profile')}}>Profile</li>
-                            <li onClick={() => {navigate('/settings')}}>Settings</li>
+                            <li onClick={() => {navigate('/profile')}}>
+                                <span className="material-symbols-outlined">
+                                    account_circle
+                                </span>
+                                Profile</li>
                             <li onClick={() => {
                                 navigate('/login');
                             document.cookie.split(";").forEach(function(c) { document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); });
-                            }}>Sign out</li>
+                            }}>
+                                <span className="material-symbols-outlined">
+                                    logout
+                                </span>
+                                Sign out</li>
                         </ul>
                     </div>
                 </span>
@@ -112,13 +139,25 @@ function Feed() {
                 <p>LOGO</p>
                 <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam dolorem modi, nobis in qui molestiae totam illo id pariatur ut perferendis eius alias rerum saepe obcaecati? Assumenda minima non unde?</p>
             </div>
-            <div className="search" id="search">
+            <div className="catalogs" id="catalogs">
+                     <div className="row">
+                            <div className="catalog"></div>
+                            <div className="catalog"></div>
+                            <div className="catalog"></div>
+                            <div className="catalog"></div>
+                     </div>
+                     <div className="row">
+                            <div className="catalog"></div>
+                            <div className="catalog"></div>
+                            <div className="catalog"></div>
+                            <div className="catalog"></div>
+                     </div>
+            </div>
+            <div className={cartOverlay ? "search shrink" : "search"} id="search">
                 <input id="search" type="text" placeholder="Search here..." onChange={(e) => {setSearchQuery(e.target.value)}}/>
                 <button onClick={() => {
                     document.getElementById("search").scrollIntoView({ behavior: 'smooth' });
-                    axios.post('/admin/products', {
-                        token: document.cookie.split(";")[0].split('=')[1]
-                    })
+                    axios.get('/products')
                     .then(res => {
                         const sorted = [...res.data.products].sort((a, b) => b.rating - a.rating);
                         setProducts(sorted.filter(product =>
@@ -148,19 +187,63 @@ function Feed() {
                     </span>
                 </span>
             </div>
-            <div className="products">
+            <div className={cartOverlay ? "products shrink" : "products"}>
                 <div className={loadingProducts ? "loadoverlay active" : "loadoverlay"}>
                     <div className="spinner"></div>
                 </div>
-                {products.map(p => (
-                    <div key={p.product_id} className="productcard" id={"productcard" + p.product_id} onClick={(e) => {document.getElementById("productcard" + p.product_id).classList.add('active')}}>
-                        <img src="/src/imgs/CSatHFW_Limp_Bizkit.jpg" alt="" />
-                        <p className="name">{p?.product_name?.length > 35 ? p?.product_name?.slice(0, 35).trim() + "..." : p?.product_name}</p>
-                        <p className="price">{p.price}</p>
-                        <p className="quantity">{p.stock_quantity}</p>
-                        <p className="rating">{p.rating}</p>
-                    </div>
-                ))}
+                {products.map(p => {
+                    if (p && Object.keys(p).length === 0) return ( <div key="0" style={{display: "none"}}></div> )
+                    const rating = Math.round(p.rating * 2)/2;
+                    let fullStars = [];
+                    if (Math.floor(rating) !== 0) fullStars = Array(Math.floor(rating)).fill('1');
+                    const hasHalfStar = rating % 1 !== 0;
+                    let emptyStars = []
+                    if (5 - fullStars.length - (hasHalfStar ? 1 : 0) !== 0) emptyStars = Array(5 - fullStars.length - (hasHalfStar ? 1 : 0)).fill('1');
+                    return (
+                        <div key={p.product_id} className="productcard" id={"productcard" + p.product_id}>
+                            <img src="/src/imgs/CSatHFW_Limp_Bizkit.jpg" alt="" />
+                            <p className="name" onClick={(e) => {
+                            document.getElementById("productcard" + p.product_id).classList.add('active');
+                            setTimeout(() => {
+                                navigate('/product?pid=' + p.product_id);
+                            }, 600)}}>{p?.product_name?.length > 28 ? p?.product_name?.slice(0, 28).trim() + "..." : p?.product_name}</p>
+                            <p className="description">{lorem.slice(0, 120)}</p>
+                            <p className="quantity">{p.stock_quantity} pcs.
+                                <span className="material-symbols-outlined">
+                                    warehouse
+                                </span></p>
+                            <p className="rating">
+                                {fullStars.length !== 0
+                                ? fullStars.map(s => {
+                                    return (
+                                        <span key={s} className="material-icons">star</span>
+                                    )
+                                })
+                                : ''
+                                }
+                                {hasHalfStar
+                                ? <span className="material-icons">star_half</span>
+                                : ''}
+                                {emptyStars.length !== 0
+                                ? emptyStars.map(s => {
+                                    return (
+                                        <span className="material-icons">star_border</span>
+                                    )
+                                })
+                                : ''
+                                }</p>
+                            <p className="price">
+                                {p.price} KZT
+                                <span className="buyncart">
+                                    <button>Buy</button>
+                                    <button>
+                                    <span className="material-icons">
+                                        add_shopping_cart
+                                    </span></button>
+                                </span></p>
+                        </div>
+                    );
+                    })}
             </div>
         </div>
     )
