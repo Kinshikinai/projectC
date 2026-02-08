@@ -239,6 +239,7 @@
     }
 
     .feed .catalogs {
+        position: relative;
         margin-top: 140px;
         background-color: rgb(221, 235, 157);
         height: 720px;
@@ -247,6 +248,11 @@
         flex-direction: column;
         padding: 40px 0px;
         justify-content: space-between;
+    }
+
+    .feed .catalogs > .loadoverlay {
+        width: 100%;
+        height: 100%;
     }
 
     .feed .catalogs .row {
@@ -259,10 +265,36 @@
     }
 
     .feed .catalogs .row .catalog {
+        cursor: pointer;
+        padding: 10px 20px;
         width: 300px;
         aspect-ratio: 1/1;
         background-color: white;
         border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-evenly;
+        transition: .15s;
+    }
+
+    .feed .catalogs .row .catalog:hover {
+        transform: translateY(-6px);
+        box-shadow: 0px 0px 20px rgba(255, 255, 255, 1);
+    }
+
+    .feed .catalogs .row .catalog.blur {
+        filter: blur(2px);
+    }
+
+    .feed .catalogs .row .catalog span {
+        transform: scale(5);
+    }
+
+    .feed .catalogs .row .catalog .name {
+        font-weight: 800;
+        font-size: 1.2rem;
+        text-align: center;
     }
 
     .feed .search {
@@ -411,7 +443,7 @@
     }
 
     .feed .products .productcard.active {
-        animation: productcardflipover .3s linear 2 forwards;
+        animation: productcardflipover .15s linear 1 forwards;
     }
 
     @keyframes productcardflipover {
@@ -499,6 +531,22 @@
 
     .feed .material-icons.cart.active {
         left: 525px;
+    }
+
+    .feed .material-icons.cart:hover {
+        animation: sway 5s ease infinite;
+    }
+
+    @keyframes sway {
+        0% {
+            transform: scale(1.5);
+        }
+        50% {
+            transform: scale(1.7);
+        }
+        100% {
+            transform: scale(1.5);
+        }
     }
 
     .feed .cartoverlay {

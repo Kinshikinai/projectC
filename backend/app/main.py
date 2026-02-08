@@ -41,11 +41,6 @@ tables = {
     password VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
     status INTEGER DEFAULT 1);""",
-    "couriers": """
-        CREATE TABLE IF NOT EXISTS couriers (courier_id SERIAL PRIMARY KEY,
-        courier_name VARCHAR(100) NOT NULL,
-        main_vehicle VARCHAR(50) NOT NULL,
-        secondary_vehicle VARCHAR(50) DEFAULT NULL);""",
     "categories": """
         CREATE TABLE IF NOT EXISTS categories (category_id SERIAL PRIMARY KEY,
         category_description TEXT DEFAULT 'Lorem, ipsum dolor sit amet consectetur adipisicing elit. 
@@ -74,7 +69,6 @@ tables = {
 
 # Initialize database tables
 for table in tables.values():
-    print(table)
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(table)
@@ -256,6 +250,41 @@ def delete_account(user_id: int, token: Token):
         if cursor.fetchone():
             return JSONResponse(content={"message": "Account deleted successfully"})
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get('/categories', status_code=status.HTTP_200_OK)
+def get_categories():
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM categories")
+        categories = cursor.fetchall()
+        categories_list = [{"category_id": c[0], "category_name": c[1]} for c in categories]
+        conn.commit()
+        return JSONResponse(content=categories_list, status_code=status.HTTP_200_OK)
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get('/productsofcategory', status_code=status.HTTP_200_OK)
+def get_products_of_category(category_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT product_id, product_name, price, stock_quantity, rating, thumbnail FROM products WHERE category_id = %s", [category_id,])
+        productsofcategory = cursor.fetchall()
+        prodcuts_list = [{"product_id": p[0], "product_name": p[1], "price": float(p[2]),
+                        "stock_quantity": p[3], "rating": float(p[4]), "thumbnail": p[5]} for p in productsofcategory]
+        conn.commit()
+        return JSONResponse(content=prodcuts_list, status_code=status.HTTP_200_OK)
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

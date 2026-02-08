@@ -1,9 +1,9 @@
-import "./Feed.css";
+import "./Category.css";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "../../axios.js";
 
-function Feed() {
+function Category() {
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -50,9 +50,9 @@ function Feed() {
 
     useEffect(() => {
         setLoadingProducts(true);
-        axios.get('/products')
+        axios.get('/productsofcategory?category_id=' + location.search.replaceAll('?', '').split('=')[1])
         .then(res => {
-            const sorted = [...res.data.products].sort((a, b) => b.price - a.price);
+            const sorted = [...res.data].sort((a, b) => b.price - a.price);
             setProducts(sorted);
             setLoadingProducts(false);
         })
@@ -146,9 +146,7 @@ function Feed() {
                 <span className="logo"><a href="/feed">LOGO</a></span>
                 <span className="center">
                     <ul>
-                        <li><a href="/feed" onClick={(e) => {e.preventDefault();if (products.length > 8) document.getElementById("search").scrollIntoView({ behavior: 'smooth' });}}>Искать</a></li>
-                        <li><a href="#catalogs" onClick={(e) => {e.preventDefault();window.scrollTo(XMLDocument, document.getElementById('catalogs').scrollHeight - 230)}}>Категории</a></li>
-                        <li><a href="/supp" onClick={(e) => {e.preventDefault();navigate('/supp')}}>Поддержка</a></li>
+                        <li><a href="/feed">Домой</a></li>
                     </ul>
                 </span>
                 <span className="profile">
@@ -174,10 +172,6 @@ function Feed() {
                     </div>
                 </span>
             </div>
-            <div className="strip">
-                <p>LOGO</p>
-                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam dolorem modi, nobis in qui molestiae totam illo id pariatur ut perferendis eius alias rerum saepe obcaecati? Assumenda minima non unde?</p>
-            </div>
             <div className="catalogs" id="catalogs">
                 <div className={loadingCategories ? "loadoverlay active" : "loadoverlay"}>
                     <div className="spinner"></div>
@@ -185,7 +179,7 @@ function Feed() {
                      <div className="row">
                             {categories.slice(0, 4).map(category => {
                                 return (    
-                                    <div id={"catalog" + category.category_id} className="catalog" onClick={() => {navigate('/category?category_id=' + category.category_id);window.location.reload()}} onMouseEnter={() => {blurCatalogs(category.category_id)}} onMouseLeave={() => {unblurCatalogs()}}>
+                                    <div style={{textDecoration: Number.parseInt(location.search.replaceAll('?', '').split('=')[1]) === category.category_id ? 'underline' : 'none'}} id={"catalog" + category.category_id} className="catalog" onClick={() => {navigate('/category?category_id=' + category.category_id);window.location.reload()}} onMouseEnter={() => {blurCatalogs(category.category_id)}} onMouseLeave={() => {unblurCatalogs()}}>
                                         <span class="material-symbols-outlined">
                                             {categories_icons[category.category_id - 1]}
                                         </span>
@@ -199,7 +193,7 @@ function Feed() {
                      <div className="row">
                             {categories.slice(4, 8).map(category => {
                                 return (
-                                    <div id={"catalog" + category.category_id} className="catalog" onClick={() => {navigate('/category?category_id=' + category.category_id);window.location.reload()}} onMouseEnter={() => {blurCatalogs(category.category_id)}} onMouseLeave={() => {unblurCatalogs()}}>
+                                    <div style={{textDecoration: Number.parseInt(location.search.replaceAll('?', '').split('=')[1]) === category.category_id ? 'underline' : 'none'}} id={"catalog" + category.category_id} className="catalog" onClick={() => {navigate('/category?category_id=' + category.category_id);window.location.reload()}} onMouseEnter={() => {blurCatalogs(category.category_id)}} onMouseLeave={() => {unblurCatalogs()}}>
                                         <span class="material-symbols-outlined">
                                             {categories_icons[category.category_id - 1]}
                                         </span>
@@ -307,4 +301,4 @@ function Feed() {
     )
 }
 
-export default Feed;
+export default Category;
