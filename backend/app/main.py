@@ -46,9 +46,18 @@ tables = {
         courier_name VARCHAR(100) NOT NULL,
         main_vehicle VARCHAR(50) NOT NULL,
         secondary_vehicle VARCHAR(50) DEFAULT NULL);""",
+    "categories": """
+        CREATE TABLE IF NOT EXISTS categories (category_id SERIAL PRIMARY KEY,
+        category_description TEXT DEFAULT 'Lorem, ipsum dolor sit amet consectetur adipisicing elit. 
+        Eos voluptatibus consequuntur, iste ea culpa distinctio officia atque veritatis maiores doloremque ab officiis repellat, 
+        rerum quia eaque placeat? Aliquam, voluptate numquam!');""",
     "products": """
         CREATE TABLE IF NOT EXISTS products (product_id SERIAL PRIMARY KEY,
         product_name VARCHAR(100) NOT NULL,
+        product_description TEXT DEFAULT 'Lorem, ipsum dolor sit amet consectetur adipisicing elit. 
+        Eos voluptatibus consequuntur, iste ea culpa distinctio officia atque veritatis maiores doloremque ab officiis repellat, 
+        rerum quia eaque placeat? Aliquam, voluptate numquam!',
+        category_id INTEGER REFERENCES categories(category_id) ON DELETE SET NULL,
         price DECIMAL(10, 2) NOT NULL,
         stock_quantity INTEGER NOT NULL,
         rating DECIMAL(2, 1) DEFAULT NULL,
@@ -65,6 +74,7 @@ tables = {
 
 # Initialize database tables
 for table in tables.values():
+    print(table)
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(table)
