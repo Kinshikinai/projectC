@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi import status
 from pydantic import BaseModel
@@ -12,9 +12,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+@app.middleware("http")
+async def add_request_time(request: Request, call_next):
+    start_time = datetime.utcnow()
+    response = await call_next(request)
+    print(f"[{start_time.isoformat()}] {request.method} {request.url.path}")
+    return response
+
+
 origins = [
-    "http://localhost:3000",
-    "http://localhost:8080",
+    "http://localhost:3000"
 ]
 
 app.add_middleware(
@@ -40,7 +47,9 @@ tables = {
     login VARCHAR(50) UNIQUE NOT NULL,
     password VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
-    status INTEGER DEFAULT 1);""",
+    status INTEGER DEFAULT 1,
+    role VARCHAR(5) DEFAULT 'user',
+    registered_at TIMESTAMPTZ DEFAULT NOW());""",
     "categories": """
         CREATE TABLE IF NOT EXISTS categories (category_id SERIAL PRIMARY KEY,
         category_description TEXT DEFAULT 'Lorem, ipsum dolor sit amet consectetur adipisicing elit. 
@@ -114,6 +123,11 @@ class ProductCreate(BaseModel):
     thumbnail: str = ""
     token: str
 
+class ResetPassword(BaseModel):
+    current_password: str
+    new_password: str
+    token: str
+
 class ProductDelete(BaseModel):
     product_id: int
     token: str
@@ -144,12 +158,12 @@ def validate_password(password: str) -> {str, bool}:
 
 # API Endpoints
 @app.get('/')
-def root():
+async def root():
     return JSONResponse(content={"message": "Hi"}, status_code=status.HTTP_200_OK)
 
 # User endpoints
 @app.post('/register', status_code=status.HTTP_201_CREATED)
-def register(user: UserCreate):
+async def register(user: UserCreate):
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -172,22 +186,22 @@ def register(user: UserCreate):
         conn.close()
 
 @app.post('/login', status_code=status.HTTP_200_OK)
-def login(user: UserLogin):
+async def login(user: UserLogin):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT password, user_id FROM users WHERE login = %s", (user.login,))
+        cursor.execute("SELECT password, user_id, role, name, registered_at FROM users WHERE login = %s", (user.login,))
         result = cursor.fetchone()
         if not result or not pwd_context.verify(user.password, result[0]):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-        access_token = create_access_token(data={"sub": user.login})
+        access_token = create_access_token(data={"login": user.login, "id": result[1], "role": result[2], 'name': result[3], 'registered_at': result[4].strftime("%Y-%m-%d %H:%M:%S")})
         return JSONResponse(content={"access_token": access_token, "token_type": "bearer"})
     finally:
         cursor.close()
         conn.close()
 
 @app.delete('/delete-account', status_code=status.HTTP_200_OK)
-def delete_account(user: UserLogin):
+async def delete_account(user: UserLogin):
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -205,12 +219,105 @@ def delete_account(user: UserLogin):
         cursor.close()
         conn.close()
 
-# Admin endpoints
-@app.post('/admin/users', status_code=status.HTTP_200_OK)
-def get_users_admin_token(token: Token, page: int = 1, per_page: int = 10):
+@app.post('/user', status_code=status.HTTP_200_OK)
+async def get_user(token: Token):
+    conn = get_connection()
+    cursor = conn.cursor()
     try:
         payload = jwt.decode(token.token, SECRET_KEY, algorithms=[ALGORITHM])
-        login = payload.get("sub")
+        return JSONResponse(content={'login': payload['login'], 'id': payload['id'], 'role': payload['role'], 'name': payload['name'], 'registered_at': payload['registered_at']}, status_code=status.HTTP_200_OK)
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get('/products', status_code=status.HTTP_200_OK)
+async def get_products():
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT COUNT(*) FROM products")
+        total = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT product_id, product_name, price, stock_quantity, rating, thumbnail, product_description FROM products")
+        products = cursor.fetchall()
+        products_list = [{"product_id": p[0], "product_name": p[1], "price": float(p[2]),
+                        "stock_quantity": p[3], "rating": float(p[4]), "thumbnail": p[5], "product_description": p[6]} for p in products]
+        return JSONResponse(content={"products": products_list, "total": total}, status_code=status.HTTP_200_OK)
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get('/categories', status_code=status.HTTP_200_OK)
+async def get_categories():
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT * FROM categories")
+        categories = cursor.fetchall()
+        categories_list = [{"category_id": c[0], "category_name": c[1]} for c in categories]
+        conn.commit()
+        return JSONResponse(content=categories_list, status_code=status.HTTP_200_OK)
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get('/productsofcategory', status_code=status.HTTP_200_OK)
+async def get_products_of_category(category_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT product_id, product_name, price, stock_quantity, rating, thumbnail, product_description FROM products WHERE category_id = %s", [category_id,])
+        productsofcategory = cursor.fetchall()
+        prodcuts_list = [{"product_id": p[0], "product_name": p[1], "price": float(p[2]),
+                        "stock_quantity": p[3], "rating": float(p[4]), "thumbnail": p[5], "product_description": p[6]} for p in productsofcategory]
+        conn.commit()
+        return JSONResponse(content=prodcuts_list, status_code=status.HTTP_200_OK)
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.post('/resetpw', status_code=status.HTTP_200_OK)
+async def reset_password(request: ResetPassword):
+    try:
+        payload = jwt.decode(request.token, SECRET_KEY, algorithms=[ALGORITHM])
+        login = payload['login']
+    except jwt.JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT password FROM users WHERE login = %s", [login])
+        result = cursor.fetchone()
+        if not result or not pwd_context.verify(request.current_password, result[0]):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+        else:
+            validatation = validate_password(request.new_password)
+            if not validatation['v']:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=validatation['msg'])
+            newpassword = pwd_context.hash(request.new_password)
+            cursor.execute("UPDATE users SET password = %s WHERE login = %s", [newpassword, login])
+            conn.commit()
+            return JSONResponse(content={"message": "Password updated successfully"})
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+# Admin endpoints
+@app.post('/admin/users', status_code=status.HTTP_200_OK)
+async def get_users_admin_token(token: Token, page: int = 1, per_page: int = 10):
+    try:
+        payload = jwt.decode(token.token, SECRET_KEY, algorithms=[ALGORITHM])
+        login = payload['login']
         alogin = os.getenv('ADMIN_LOGIN')
         if login != alogin:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin credentials")
@@ -233,10 +340,10 @@ def get_users_admin_token(token: Token, page: int = 1, per_page: int = 10):
         conn.close()
 
 @app.delete('/admin/delete-account', status_code=status.HTTP_200_OK)
-def delete_account(user_id: int, token: Token):
+async def delete_account(user_id: int, token: Token):
     try:
         payload = jwt.decode(token.token, SECRET_KEY, algorithms=[ALGORITHM])
-        login = payload.get("sub")
+        login = payload['login']
         alogin = os.getenv('ADMIN_LOGIN')
         if login != alogin:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin credentials")
@@ -257,47 +364,11 @@ def delete_account(user_id: int, token: Token):
         cursor.close()
         conn.close()
 
-@app.get('/categories', status_code=status.HTTP_200_OK)
-def get_categories():
-    conn = get_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("SELECT * FROM categories")
-        categories = cursor.fetchall()
-        categories_list = [{"category_id": c[0], "category_name": c[1]} for c in categories]
-        conn.commit()
-        return JSONResponse(content=categories_list, status_code=status.HTTP_200_OK)
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    finally:
-        cursor.close()
-        conn.close()
-
-@app.get('/productsofcategory', status_code=status.HTTP_200_OK)
-def get_products_of_category(category_id: int):
-    conn = get_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("SELECT product_id, product_name, price, stock_quantity, rating, thumbnail FROM products WHERE category_id = %s", [category_id,])
-        productsofcategory = cursor.fetchall()
-        prodcuts_list = [{"product_id": p[0], "product_name": p[1], "price": float(p[2]),
-                        "stock_quantity": p[3], "rating": float(p[4]), "thumbnail": p[5]} for p in productsofcategory]
-        conn.commit()
-        return JSONResponse(content=prodcuts_list, status_code=status.HTTP_200_OK)
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    finally:
-        cursor.close()
-        conn.close()
-
-
 @app.post('/admin/ban', status_code=status.HTTP_200_OK)
-def ban_user(token: Token, user_id: int):
+async def ban_user(token: Token, user_id: int):
     try:
         payload = jwt.decode(token.token, SECRET_KEY, algorithms=[ALGORITHM])
-        login = payload.get("sub")
+        login = payload['login']
         alogin = os.getenv('ADMIN_LOGIN')
         if login != alogin:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin credentials")
@@ -321,10 +392,10 @@ def ban_user(token: Token, user_id: int):
         conn.close()
 
 @app.post('/admin/unban', status_code=status.HTTP_200_OK)
-def unban_user(token: Token, user_id: int):
+async def unban_user(token: Token, user_id: int):
     try:
         payload = jwt.decode(token.token, SECRET_KEY, algorithms=[ALGORITHM])
-        login = payload.get("sub")
+        login = payload['login']
         alogin = os.getenv('ADMIN_LOGIN')
         if login != alogin:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin credentials")
@@ -348,10 +419,10 @@ def unban_user(token: Token, user_id: int):
         conn.close()
 
 @app.post('/admin/orders', status_code=status.HTTP_200_OK)
-def get_order_admin(token: Token, page: int = 1, per_page: int = 10):
+async def get_order_admin(token: Token, page: int = 1, per_page: int = 10):
     try:
         payload = jwt.decode(token.token, SECRET_KEY, algorithms=[ALGORITHM])
-        login = payload.get("sub")
+        login = payload['login']
         alogin = os.getenv('ADMIN_LOGIN')
         if login != alogin:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin credentials")
@@ -375,10 +446,10 @@ def get_order_admin(token: Token, page: int = 1, per_page: int = 10):
         conn.close()
 
 @app.post('/admin/couriers', status_code=status.HTTP_200_OK)
-def get_couriers_admin(token: Token, page: int = 1, per_page: int = 10):
+async def get_couriers_admin(token: Token, page: int = 1, per_page: int = 10):
     try:
         payload = jwt.decode(token.token, SECRET_KEY, algorithms=[ALGORITHM])
-        login = payload.get("sub")
+        login = payload['login']
         alogin = os.getenv('ADMIN_LOGIN')
         if login != alogin:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin credentials")
@@ -401,28 +472,11 @@ def get_couriers_admin(token: Token, page: int = 1, per_page: int = 10):
         cursor.close()
         conn.close()
 
-@app.get('/products', status_code=status.HTTP_200_OK)
-def get_products():
-    conn = get_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("SELECT COUNT(*) FROM products")
-        total = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT product_id, product_name, price, stock_quantity, rating, thumbnail FROM products")
-        products = cursor.fetchall()
-        products_list = [{"product_id": p[0], "product_name": p[1], "price": float(p[2]),
-                        "stock_quantity": p[3], "rating": float(p[4]), "thumbnail": p[5]} for p in products]
-        return JSONResponse(content={"products": products_list, "total": total}, status_code=status.HTTP_200_OK)
-    finally:
-        cursor.close()
-        conn.close()
-
 @app.post('/admin/products/add', status_code=status.HTTP_201_CREATED)
-def add_product(product: ProductCreate):
+async def add_product(product: ProductCreate):
     try:
         payload = jwt.decode(product.token, SECRET_KEY, algorithms=[ALGORITHM])
-        login = payload.get("sub")
+        login = payload['login']
         alogin = os.getenv('ADMIN_LOGIN')
         if login != alogin:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin credentials")
@@ -450,10 +504,10 @@ def add_product(product: ProductCreate):
         conn.close()
 
 @app.delete('/admin/products/delete', status_code=status.HTTP_200_OK)
-def delete_product(product: ProductDelete):
+async def delete_product(product: ProductDelete):
     try:
         payload = jwt.decode(product.token, SECRET_KEY, algorithms=[ALGORITHM])
-        login = payload.get("sub")
+        login = payload['login']
         alogin = os.getenv('ADMIN_LOGIN')
         if login != alogin:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin credentials")

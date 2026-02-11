@@ -2,6 +2,7 @@ import "./Category.css";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "../../axios.js";
+import { getAccessToken, sessionExpired } from '../../cookie.js';
 
 function Category() {
     const navigate = useNavigate();
@@ -9,6 +10,7 @@ function Category() {
 
     const [profileActive, setProfileActive] = useState(false);
     const [name, setName] = useState("Name");
+    const [user, setUser] = useState({'login': 'login', 'id': 0,'role': 'user', 'name': 'User'});
     const [sortDown, setSortDown] = useState(true);
     const [sortByValue, setSortByValue] = useState('Price');
     const [products, setProducts] = useState([{}]);
@@ -21,34 +23,23 @@ function Category() {
     const [headerClasses, setHeaderClasses] = useState("");
     const lorem = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Veritatis tenetur culpa debitis provident unde architecto rerum sit sunt dolores repudiandae mollitia facilis labore ipsa beatae, soluta in? Porro, ratione quos!";
     const categories_icons = ['grocery', 'dining', 'family_home', 'devices', 'apparel', 'health_metrics', 'home_repair_service', 'design_services'];
-
-    function unblurCatalogs() {
-        let categoriessels = [];
-        const arr = Array.from({ length: 8 }, (_, i) => i + 1);
-        arr.map(c => (
-            categoriessels.push(document.getElementById('catalog' + c))
-        ));
-        categoriessels.map(c => (
-            c.classList.remove('blur')
-        ));
-    }
-
-    function blurCatalogs(notBlurCatalog) {
-        let categoriessels = [];
-        const arr = Array.from({ length: 8 }, (_, i) => i + 1);
-        arr.map(c => (
-            categoriessels.push(document.getElementById('catalog' + c))
-        ));
-        categoriessels.map(c => (
-            c.classList.remove('blur')
-        ));
-        categoriessels.map(c => {
-            if (Number.parseInt(c.id.slice(-1, c.className.length + 1)) !== notBlurCatalog) c.classList.add('blur');
-            return c;
-        });
-    }
+    const roles_icons_colors = ['supervisor_account:red', 'person:blue', 'person:green']
+    const rolesindex = ['admin', 'super', 'user']
 
     useEffect(() => {
+        if (getAccessToken() === undefined) {
+            alert('Session expired or not logged in!\nYou will be redirected to the Login page.');
+            navigate('/login');
+        }
+        axios.post('/user', {
+            token: getAccessToken()
+        })
+        .then(res => {
+            setUser(res.data);
+        })
+        .catch(e => {
+            console.error(e);
+        });
         setLoadingProducts(true);
         axios.get('/productsofcategory?category_id=' + location.search.replaceAll('?', '').split('=')[1])
         .then(res => {
@@ -143,16 +134,18 @@ function Category() {
                 shopping_cart
             </span>
             <div className={"header" + headerClasses}>
-                <span className="logo"><a href="/feed">LOGO</a></span>
+                <span className="logo"><a href="/feed">RAMA</a></span>
                 <span className="center">
                     <ul>
-                        <li><a href="/feed">Домой</a></li>
+                        <li><a href="/feed">Home</a></li>
                     </ul>
                 </span>
                 <span className="profile">
                     <div className="profilecontainer">
-                        <div className="ava"></div>
-                        <p className="n">{name}</p>
+                        <span style={{color: roles_icons_colors[rolesindex.indexOf(user.role)].split(':')[1]}} class="material-symbols-outlined ava">
+                            {roles_icons_colors[rolesindex.indexOf(user.role)].split(':')[0]}
+                        </span>
+                        <p className="n" style={{color: roles_icons_colors[rolesindex.indexOf(user.role)].split(':')[1]}}>{user.name}</p>
                         <div className="arrowdown" onClick={(e) => {setProfileActive(!profileActive);}}></div>
                         <ul className={profileActive ? 'profiledropdown active' : 'profiledropdown'}>
                             <li onClick={() => {navigate('/profile')}}>
@@ -179,7 +172,7 @@ function Category() {
                      <div className="row">
                             {categories.slice(0, 4).map(category => {
                                 return (    
-                                    <div style={{textDecoration: Number.parseInt(location.search.replaceAll('?', '').split('=')[1]) === category.category_id ? 'underline' : 'none'}} id={"catalog" + category.category_id} className="catalog" onClick={() => {navigate('/category?category_id=' + category.category_id);window.location.reload()}} onMouseEnter={() => {blurCatalogs(category.category_id)}} onMouseLeave={() => {unblurCatalogs()}}>
+                                    <div style={{textDecoration: Number.parseInt(location.search.replaceAll('?', '').split('=')[1]) === category.category_id ? 'underline' : 'none'}} id={"catalog" + category.category_id} className="catalog" onClick={() => {navigate('/category?category_id=' + category.category_id);window.location.reload()}}>
                                         <span class="material-symbols-outlined">
                                             {categories_icons[category.category_id - 1]}
                                         </span>
@@ -193,7 +186,7 @@ function Category() {
                      <div className="row">
                             {categories.slice(4, 8).map(category => {
                                 return (
-                                    <div style={{textDecoration: Number.parseInt(location.search.replaceAll('?', '').split('=')[1]) === category.category_id ? 'underline' : 'none'}} id={"catalog" + category.category_id} className="catalog" onClick={() => {navigate('/category?category_id=' + category.category_id);window.location.reload()}} onMouseEnter={() => {blurCatalogs(category.category_id)}} onMouseLeave={() => {unblurCatalogs()}}>
+                                    <div style={{textDecoration: Number.parseInt(location.search.replaceAll('?', '').split('=')[1]) === category.category_id ? 'underline' : 'none'}} id={"catalog" + category.category_id} className="catalog" onClick={() => {navigate('/category?category_id=' + category.category_id);window.location.reload()}}>
                                         <span class="material-symbols-outlined">
                                             {categories_icons[category.category_id - 1]}
                                         </span>
@@ -259,7 +252,7 @@ function Category() {
                             setTimeout(() => {
                                 navigate('/product?pid=' + p.product_id);
                             }, 150)}}>{p?.product_name?.length > 28 ? p?.product_name?.slice(0, 28).trim() + "..." : p?.product_name}</p>
-                            <p className="description">{lorem.slice(0, 120)}</p>
+                            <p className="description">{p.product_description.slice(0, 120)}</p>
                             <p className="quantity">{p.stock_quantity} pcs.
                                 <span className="material-symbols-outlined">
                                     warehouse
@@ -285,7 +278,12 @@ function Category() {
                                 : ''
                                 }</p>
                             <p className="price">
-                                {p.price} KZT
+                                <div>
+                                    {p.price} 
+                                    <span class="material-symbols-outlined">
+                                        attach_money
+                                    </span>
+                                </div>
                                 <span className="buyncart">
                                     <button>Buy</button>
                                     <button>

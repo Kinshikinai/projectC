@@ -1,0 +1,197 @@
+/* Phone */
+/* Colors
+    bright - DDEB9D rgb(221, 235, 157)
+    less bright - A0C878 rgb(160, 200, 120)
+    dark - 27667B rgb(39, 102, 123)
+    darkest - 143D60 rgb(20, 61, 96)
+*/
+
+.profilepage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100vw;
+    height: fit-content;
+    min-height: 100vh;
+    background-color: #27667B;
+}
+
+/* Laptop */
+@media (min-width: 1024px) {
+    .profilepage {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100vw;
+        height: fit-content;
+        min-height: 100vh;
+        background-color: #27667B;
+        padding-top: 60px;
+    }
+
+    .profilepage .maincontainer {
+        display: flex;
+        flex-direction: row;
+        width: 84%;
+        height: 100%;
+        gap: 10px;
+    }
+
+    .profilepage .maincontainer .left {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 30%;
+        height: 100%;
+        border: 2px solid black;
+        background-color: rgb(221, 235, 157);
+        gap: 10px;
+        padding: 20px 30px;
+    }
+
+    .profilepage .maincontainer .left .material-symbols-outlined {
+        font-size: 10rem;
+        border-radius: 50%;
+        border: 2px solid black;
+        background-color: white;
+        padding: 40px;
+        user-select: none;
+    }
+
+    .profilepage .maincontainer .left .profilename {
+        font-weight: 700;
+        font-size: 2rem;
+        text-decoration: underline;
+    }
+
+    .profilepage .maincontainer .right {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-around;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .profilepage .maincontainer .right > div {
+        width: 100%;
+        border: 2px solid black;
+        background-color: white;
+    }
+
+    .profilepage .maincontainer .right .info {
+        height: fit-content;
+        padding: 20px;    
+    }
+
+    .profilepage .maincontainer .right .resetpw {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-around;
+        height: 100%;
+        padding: 20px;
+        position: relative;
+    }
+
+    .profilepage .maincontainer .right .resetpw input {
+        padding: 6px 10px;
+        font-size: 1rem;
+        width: 100%;
+    }
+    .profilepage .maincontainer .right .resetpw button {
+        padding: 4px;
+        font-size: 0.9rem;
+        background-color: rgb(160, 200, 120);
+        cursor: pointer;
+    }
+
+    .profilepage .maincontainer .right .resetpw .input {
+        position: relative;
+        width: 50%;
+    }
+
+    .profilepage .maincontainer .right .resetpw .material-symbols-outlined {
+        position: absolute;
+        top: 25%;
+        right: 2%;
+        cursor: pointer;
+        filter: contrast(0.5);
+        user-select: none;
+    }
+
+    .profilepage .maincontainer .right .resetpw .material-symbols-outlined:hover {
+        filter: contrast(1);
+    }
+
+    .profilepage .maincontainer .right .resetpw .pwarn {
+        display: none;
+        position: absolute;
+        top: -10px;
+        left: auto;
+        width: fit-content;
+        height: fit-content;
+        background-color: red;
+        color: white;
+        text-align: center;
+        font-weight: 600;
+        padding: 6px 4px;
+        border-radius: 4px;
+        z-index: 1;
+        font-size: 0.8rem;
+    }
+
+    .profilepage .maincontainer .right .resetpw .pwarn.anim {
+        animation: pwarnfade 0.5s 2s ease 1 forwards;
+    }
+
+    @keyframes pwarnfade {
+        from {
+            color: rgba(255, 255, 255, 1);
+            background-color: rgba(255, 0, 0, 1);
+        }
+        to {
+            color: rgba(255, 255, 255, 0);
+            background-color: rgba(255, 0, 0, 0);
+        }
+    }
+
+    .profilepage .orderscontainer {
+        display: flex;
+        flex-direction: column;
+        width: 94%;
+        height: fit-content;
+        padding: 20px 30px;
+        background-color: white;
+        margin-top: 20px;
+        border: 2px solid black;
+        gap: 10px;
+    }
+
+    .profilepage .orderscontainer > p {
+        font-size: 1.5rem;
+        font-weight: 300;
+        padding-left: 40px;
+    }
+
+    .profilepage .orderscontainer .line {
+        width: 100%;
+        align-self: center;
+        height: 1px;
+        background-color: black;
+    }
+
+    .profilepage .orderscontainer .orders {
+        height: fit-content;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+
+    .profilepage .orderscontainer .orders .order {
+        width: 90%;
+        min-width: fit-content;
+        height: 500px;
+        border: 1px solid black;
+    }
+}

@@ -24,6 +24,5 @@ html::-webkit-scrollbar-button {
 }
 
 #root {
-  width: 100wh;
   height: 100vh;
 }

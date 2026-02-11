@@ -5,6 +5,7 @@ import Login from './Components/Login/Login.jsx';
 import Feed from './Components/Feed/Feed.jsx';
 import Product from './Components/Product/Product.jsx';
 import Category from './Components/Category/Category.jsx';
+import Profile from './Components/Profile/Profile.jsx';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
       <Route path="/feed" element={<Feed />} />
       <Route path="/product" element={<Product />} />
       <Route path="/category" element={<Category />} />
+      <Route path="/profile" element={<Profile />} />
     </Routes>
   );
 }
