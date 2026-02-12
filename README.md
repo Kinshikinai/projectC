@@ -47,7 +47,7 @@ cd frontend
 npm start
 ```
 It should show something like:
-<img src="screenshots/frontend.png" width="500">
+<img src="screenshots/frontend.png" style="width: 100%">
 
 6. Before starting backend, we need to setup our database:
 - Setup pgAdmin4 server
