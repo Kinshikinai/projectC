@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from 'react-router-dom';
+import { data, useNavigate } from 'react-router-dom';
 import './Profile.css';
 import axios from '../../axios.js';
 import { getAccessToken } from '../../cookie.js';
@@ -175,14 +175,16 @@ function Profile() {
             alert('Session expired or not logged in!\nYou will be redirected to the Login page.');
             navigate('/login');
         }
-        axios.delete('/admin/products/delete',
+        console.log(document.getElementById("productid").value);
+        axios.post('/admin/products/delete',
             {
                 token: getAccessToken(),
-                product_id: Number.parseInt(document.getElementById("productid").value)
+                product_id: document.getElementById("productid").value
             }
         )
         .then(res => {
             alert(res.data.message);
+            window.location.reload();
         })
         .catch(e => {
             console.error(e);

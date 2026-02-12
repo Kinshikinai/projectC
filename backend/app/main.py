@@ -53,13 +53,10 @@ tables = {
     address TEXT DEFAULT NULL);""",
     "categories": """
         CREATE TABLE IF NOT EXISTS categories (category_id SERIAL PRIMARY KEY,
-        category_name VARCHAR(100),
-        category_description TEXT DEFAULT 'Lorem, ipsum dolor sit amet consectetur adipisicing elit. 
-        Eos voluptatibus consequuntur, iste ea culpa distinctio officia atque veritatis maiores doloremque ab officiis repellat, 
-        rerum quia eaque placeat? Aliquam, voluptate numquam!');""",
+        category_name VARCHAR(100));""",
     "products": """
         CREATE TABLE IF NOT EXISTS products (product_id SERIAL PRIMARY KEY,
-        product_name VARCHAR(100) NOT NULL,
+        product_name TEXT NOT NULL,
         product_description TEXT DEFAULT 'Lorem, ipsum dolor sit amet consectetur adipisicing elit. 
         Eos voluptatibus consequuntur, iste ea culpa distinctio officia atque veritatis maiores doloremque ab officiis repellat, 
         rerum quia eaque placeat? Aliquam, voluptate numquam!',
@@ -67,7 +64,7 @@ tables = {
         sold INTEGER DEFAULT 0,
         price DECIMAL(10, 2) NOT NULL,
         rating DECIMAL(2, 1) DEFAULT NULL,
-        thumbnail VARCHAR(255) DEFAULT NULL);""",
+        thumbnail TEXT DEFAULT NULL);""",
     "orders": """
         CREATE TABLE IF NOT EXISTS orders (order_id SERIAL PRIMARY KEY,
         product_id INTEGER REFERENCES products(product_id) ON DELETE SET NULL,
@@ -93,11 +90,20 @@ cursor = conn.cursor()
 cursor.execute("SELECT login FROM users WHERE login = %s", (alogin,))
 if not cursor.fetchone():
     hashed_password = pwd_context.hash(apassword)
-    cursor.execute("INSERT INTO users (login, password, namem role) VALUES (%s, %s, %s)",
+    cursor.execute("INSERT INTO users (login, password, name, role) VALUES (%s, %s, %s, %s)",
                     (alogin, hashed_password, 'Administrator', 'admin'))
     conn.commit()
 cursor.close()
 conn.close()
+
+# Restoring backup
+# with open("./app/projectCdb", "r", encoding="utf-8") as f:
+#     sql = f.read()
+
+# cursor.execute(sql)
+# conn.commit()
+# cursor.close()
+# conn.close()
 
 # Pydantic models
 class UserCreate(BaseModel):
@@ -571,7 +577,7 @@ async def add_product(product: ProductCreate):
         cursor.close()
         conn.close()
 
-@app.delete('/admin/products/delete', status_code=status.HTTP_200_OK)
+@app.post('/admin/products/delete', status_code=status.HTTP_200_OK)
 async def delete_product(product: ProductDelete):
     try:
         payload = jwt.decode(product.token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -581,6 +587,7 @@ async def delete_product(product: ProductDelete):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin credentials")
     except jwt.JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT product_id FROM products WHERE product_id = %s", (product.product_id,))

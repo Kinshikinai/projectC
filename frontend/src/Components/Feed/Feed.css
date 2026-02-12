@@ -134,6 +134,7 @@
     }
 
     .feed .header .profile .profilecontainer {
+        min-width: 120px;
         width: fit-content;
         display: flex;
         flex-direction: row;
