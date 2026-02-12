@@ -5,7 +5,7 @@ A website me and [@Ohello404](https://github.com/Ohello404) developed as a Advan
 It is a marketplace for selling antiques, souveniers or relics. 
 
 ## Installation
-The only thing you need to get installed on your Windows is [Docker Desktop](https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe?utm_source=docker&utm_medium=webreferral&utm_campaign=docs-driven-download-win-amd64).
+The only thing you need to get installed on your Windows is [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/).
 
 After the installation open **Docker Desktop** and login, if you already have an account, or create one.
 
