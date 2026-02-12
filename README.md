@@ -84,4 +84,14 @@ uvicorn app.main:app --reload
 docker compose up --build
 ```
 
-2. 
+2. Copy backup file to docker machine:
+```bash
+docker cp "C:\Users\your-username\path-to-repo\backend\app\projectCdb.sql" postgres_db:/tmp/projectCdb.sql
+```
+
+3. Apply backup to postgres container:
+```bash
+docker exec -i postgres_db psql -U yourusername -d projectC -f /tmp/projectCdb.sql
+```
+
+4. Go to [frontend](http://localhost:3000)
