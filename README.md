@@ -79,4 +79,9 @@ uvicorn app.main:app --reload
 ## To run using Docker
 *No installations to local machine needed*
 
-1. 
+1. Go to repository and run:
+```bash
+docker compose up --build
+```
+
+2. 
