@@ -49,9 +49,11 @@ tables = {
     name VARCHAR(100) NOT NULL,
     status INTEGER DEFAULT 1,
     role VARCHAR(5) DEFAULT 'user',
-    registered_at TIMESTAMPTZ DEFAULT NOW());""",
+    registered_at TIMESTAMPTZ DEFAULT NOW(),
+    address TEXT DEFAULT NULL);""",
     "categories": """
         CREATE TABLE IF NOT EXISTS categories (category_id SERIAL PRIMARY KEY,
+        category_name VARCHAR(100),
         category_description TEXT DEFAULT 'Lorem, ipsum dolor sit amet consectetur adipisicing elit. 
         Eos voluptatibus consequuntur, iste ea culpa distinctio officia atque veritatis maiores doloremque ab officiis repellat, 
         rerum quia eaque placeat? Aliquam, voluptate numquam!');""",
@@ -70,7 +72,6 @@ tables = {
         CREATE TABLE IF NOT EXISTS orders (order_id SERIAL PRIMARY KEY,
         product_id INTEGER REFERENCES products(product_id) ON DELETE SET NULL,
         user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
-        courier_id INTEGER REFERENCES couriers(courier_id) ON DELETE SET NULL,
         quantity INTEGER NOT NULL,
         status VARCHAR(50) DEFAULT 'Pending',
         order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"""

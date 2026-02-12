@@ -13,6 +13,9 @@ function Profile() {
     const [repeatCurrentPassword, setRepeatCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
 
+    const [products, setProducts] = useState([{}]);
+    const [loadingProducts, setLoadingProducts] = useState(false);
+
     const [currentPassType, setCurrentPassType] = useState(true);
     const [repeatCurrentPassType, setRepeatCurrentPassType] = useState(true);
     const [newPassType, setNewPassType] = useState(true);
@@ -36,6 +39,18 @@ function Profile() {
         })
         .catch(e => {
             console.error(e);
+        });
+        setLoadingProducts(true);
+        axios.get('/products')
+        .then(res => {
+            const sorted = [...res.data.products].sort((a, b) => b.price - a.price).slice(0, 20);
+            setProducts(sorted);
+            console.log(sorted);
+            setLoadingProducts(false);
+        })
+        .catch(e => {
+            console.error(e);
+            setLoadingProducts(false);
         });
     }, []);
 
@@ -94,6 +109,9 @@ function Profile() {
     
     return (
         <div className="profilepage">
+            <div className={loadingProducts ? "loadoverlay active" : "loadoverlay"}>
+                <div className="spinner"></div>
+            </div>
             <div className="maincontainer">
                 <div className="left">
                     <span style={{backgroundColor: roles_icons_colors[rolesindex.indexOf(user.role)].split(':')[1]}} className="material-symbols-outlined">
@@ -127,13 +145,54 @@ function Profile() {
                 <p>Orders:</p>
                 <div className="line"></div>
                 <div className="orders">
-                    <div className="order"></div>
-                    <div className="order"></div>
-                    <div className="order"></div>
-                    <div className="order"></div>
-                    <div className="order"></div>
-                    <div className="order"></div>
-                    <div className="order"></div>
+                    {products.map(p => {
+                    if (p && Object.keys(p).length === 0) return ( <div key="0" style={{display: "none"}}></div> )
+                    const rating = Math.round(p.rating * 2)/2;
+                    let fullStars = [];
+                    if (Math.floor(rating) !== 0) fullStars = Array(Math.floor(rating)).fill('1');
+                    const hasHalfStar = rating % 1 !== 0;
+                    let emptyStars = []
+                    if (5 - fullStars.length - (hasHalfStar ? 1 : 0) !== 0) emptyStars = Array(5 - fullStars.length - (hasHalfStar ? 1 : 0)).fill('1');
+                    return (
+                        <div key={p.product_id} className="order" id={"order" + p.product_id}>
+                            <img src="/src/imgs/CSatHFW_Limp_Bizkit.jpg" alt="" />
+                            <p className="name">{p?.product_name?.length > 28 ? p?.product_name?.slice(0, 28).trim() + "..." : p?.product_name}</p>
+                            <p className="description">{p.product_description.slice(0, 120)}</p>
+                            <p className="quantity">{p.stock_quantity} pcs.
+                                <span className="material-symbols-outlined">
+                                    warehouse
+                                </span></p>
+                            <p className="rating">
+                                {fullStars.length !== 0
+                                ? fullStars.map(s => {
+                                    return (
+                                        <span key={s} className="material-icons">star</span>
+                                    )
+                                })
+                                : ''
+                                }
+                                {hasHalfStar
+                                ? <span className="material-icons">star_half</span>
+                                : ''}
+                                {emptyStars.length !== 0
+                                ? emptyStars.map(s => {
+                                    return (
+                                        <span className="material-icons">star_border</span>
+                                    )
+                                })
+                                : ''
+                                }</p>
+                            <p className="price">
+                                <div>
+                                    {p.price} 
+                                    <span class="material-symbols-outlined">
+                                        attach_money
+                                    </span>
+                                </div>
+                            </p>
+                        </div>
+                    );
+                    })}
                 </div>
             </div>
         </div>

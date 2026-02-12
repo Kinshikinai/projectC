@@ -182,16 +182,95 @@
     }
 
     .profilepage .orderscontainer .orders {
+        position: relative;
+        width: 100%;
         height: fit-content;
+        padding: 40px;
+        background-color: white;
+        border-radius: 4px;
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 20px;
+        transition: .3s ease;
+        background-color: white;
+        border: 1px solid black;
     }
 
     .profilepage .orderscontainer .orders .order {
-        width: 90%;
-        min-width: fit-content;
-        height: 500px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
         border: 1px solid black;
+        height: 610px;
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 10px 10px rgba(255,255,255,0.4);
+        transition: .15s;
+    }
+
+    .profilepage .orderscontainer .orders .order:hover {
+        transform: scale(1.01);
+        box-shadow: 0 12px 10px rgba(255,255,255,0.4);
+    }
+
+    .profilepage .orderscontainer .orders .order img {
+        width: 100%;
+        aspect-ratio: 3/4;
+    }
+
+    .profilepage .orderscontainer .orders .order .name {
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .profilepage .orderscontainer .orders .order .name:hover {
+        text-decoration: underline;
+    }
+
+    .profilepage .orderscontainer .orders .order .price {
+        font-weight: 300;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        height: fit-content;
+        margin-top: auto;
+    }
+
+    .profilepage .orderscontainer .orders .order .price div {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .profilepage .orderscontainer .orders .order .price span {
+        display: flex;
+        flex-direction: row;
+        width: fit-content;
+        height: fit-content;
+        gap: 10px;
+    }
+
+    .profilepage .orderscontainer .orders .order .price span button {
+        padding: 0px 10px;
+        background-color: white;    
+    }
+
+    .profilepage .orderscontainer .orders .order .price span button:nth-child(1) {
+        background-color: rgb(221, 235, 157);
+    }
+
+    .profilepage .orderscontainer .orders .order .quantity {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .profilepage .orderscontainer .orders .order .rating {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 1px;
     }
 }

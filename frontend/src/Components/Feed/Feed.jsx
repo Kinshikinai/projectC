@@ -42,7 +42,6 @@ function Feed() {
         setLoadingProducts(true);
         axios.get('/products')
         .then(res => {
-            console.log(res.data.products)
             const sorted = [...res.data.products].sort((a, b) => b.price - a.price);
             setProducts(sorted);
             setLoadingProducts(false);
@@ -290,13 +289,7 @@ function Feed() {
                                         attach_money
                                     </span>
                                 </div>
-                                <span className="buyncart">
-                                    <button>Buy</button>
-                                    <button>
-                                    <span className="material-icons">
-                                        add_shopping_cart
-                                    </span></button>
-                                </span></p>
+                            </p>
                         </div>
                     );
                     })}
