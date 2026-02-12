@@ -76,5 +76,4 @@ uvicorn app.main:app --reload
 ```
 <img src="screenshots/backend.png" style="width: 100%">
 
-## To run using Docker
-*No installations to local machine needed*
+## To run using Docker *No installations to local machine needed*
