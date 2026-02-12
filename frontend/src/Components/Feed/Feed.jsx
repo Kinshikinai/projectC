@@ -1,5 +1,5 @@
 import "./Feed.css";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "../../axios.js";
 import { getAccessToken } from "../../cookie.js";
@@ -17,13 +17,12 @@ function Feed() {
     const [loadingProducts, setLoadingProducts] = useState(false);
     const [loadingCategories, setLoadingCategories] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [cartOverlay, setCartOverlay] = useState(false);
     const [hideHeader, setHideHeader] = useState(false);
     const [headerClasses, setHeaderClasses] = useState("");
     const lorem = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Veritatis tenetur culpa debitis provident unde architecto rerum sit sunt dolores repudiandae mollitia facilis labore ipsa beatae, soluta in? Porro, ratione quos!";
     const categories_icons = ['grocery', 'dining', 'family_home', 'devices', 'apparel', 'health_metrics', 'home_repair_service', 'design_services'];
-    const roles_icons_colors = ['supervisor_account:red', 'person:blue', 'person:green']
-    const rolesindex = ['admin', 'super', 'user']
+    const roles_icons_colors = ['supervisor_account:red', 'person:green']
+    const rolesindex = ['admin', 'user']
 
     useEffect(() => {
         if (getAccessToken() === undefined) {
@@ -114,24 +113,28 @@ function Feed() {
         }
     }, [sortByValue, sortDown]);
 
+    function order(pid) {
+        if (getAccessToken() === undefined) {
+            alert('Session expired or not logged in!\nYou will be redirected to the Login page.');
+            navigate('/login');
+        }
+        axios.post('/orderitem',
+            {
+                token: getAccessToken(),
+                product_id: pid
+            }
+        )
+        .then(res => {
+            alert(res.data.message);
+            window.location.reload();
+        })
+        .catch(e => {
+            console.error(e);
+        });
+    }
+
     return (
         <div className="feed">
-            <div className={cartOverlay ? "cartoverlay active" : "cartoverlay"} id="cartoverlay">
-                CART
-            </div>
-            <span className={cartOverlay ? "material-icons cart active" : "material-icons cart"} onClick={() => {
-                setCartOverlay(!cartOverlay);
-                let headerclasses = "";
-                if (!cartOverlay) {
-                    headerclasses = headerclasses + " shrink";
-                }
-                if (hideHeader) {
-                    headerclasses = headerclasses + " hide";
-                }
-                setHeaderClasses(headerclasses);
-            }}>
-                shopping_cart
-            </span>
             <div className={"header" + headerClasses}>
                 <span className="logo"><a href="/feed">RAMA</a></span>
                 <span className="center">
@@ -203,7 +206,7 @@ function Feed() {
                             })}
                      </div>
             </div>
-            <div className={cartOverlay ? "search shrink" : "search"} id="search">
+            <div className="search" id="search">
                 <input id="search" type="text" placeholder="Search here..." onChange={(e) => {setSearchQuery(e.target.value)}}/>
                 <button onClick={() => {
                     document.getElementById("search").scrollIntoView({ behavior: 'smooth' });
@@ -237,11 +240,14 @@ function Feed() {
                     </span>
                 </span>
             </div>
-            <div className={cartOverlay ? "products shrink" : "products"}>
+            <div className="products">
                 <div className={loadingProducts ? "loadoverlay active" : "loadoverlay"}>
                     <div className="spinner"></div>
                 </div>
                 {products.map(p => {
+                    if (p.sold === 1) {
+                        return <></>
+                    }
                     if (p && Object.keys(p).length === 0) return ( <div key="0" style={{display: "none"}}></div> )
                     const rating = Math.round(p.rating * 2)/2;
                     let fullStars = [];
@@ -252,16 +258,8 @@ function Feed() {
                     return (
                         <div key={p.product_id} className="productcard" id={"productcard" + p.product_id}>
                             <img src="/src/imgs/CSatHFW_Limp_Bizkit.jpg" alt="" />
-                            <p className="name" onClick={(e) => {
-                            document.getElementById("productcard" + p.product_id).classList.add('active');
-                            setTimeout(() => {
-                                navigate('/product?pid=' + p.product_id);
-                            }, 150)}}>{p?.product_name?.length > 28 ? p?.product_name?.slice(0, 28).trim() + "..." : p?.product_name}</p>
+                            <p className="name">{p.product_name}</p>
                             <p className="description">{p.product_description.slice(0, 120)}</p>
-                            <p className="quantity">{p.stock_quantity} pcs.
-                                <span className="material-symbols-outlined">
-                                    warehouse
-                                </span></p>
                             <p className="rating">
                                 {fullStars.length !== 0
                                 ? fullStars.map(s => {
@@ -285,10 +283,13 @@ function Feed() {
                             <p className="price">
                                 <div>
                                     {p.price} 
-                                    <span class="material-symbols-outlined">
+                                    <span className="material-symbols-outlined">
                                         attach_money
                                     </span>
                                 </div>
+                                <span className="orderncart">
+                                    <button onClick={() => {order(p.product_id)}}>Order</button>
+                                </span>
                             </p>
                         </div>
                     );

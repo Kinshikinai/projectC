@@ -9,6 +9,7 @@ from passlib.context import CryptContext
 from dotenv import load_dotenv
 import os
 from fastapi.middleware.cors import CORSMiddleware
+from psycopg2 import sql
 
 app = FastAPI()
 
@@ -18,7 +19,6 @@ async def add_request_time(request: Request, call_next):
     response = await call_next(request)
     print(f"[{start_time.isoformat()}] {request.method} {request.url.path}")
     return response
-
 
 origins = [
     "http://localhost:3000"
@@ -64,15 +64,14 @@ tables = {
         Eos voluptatibus consequuntur, iste ea culpa distinctio officia atque veritatis maiores doloremque ab officiis repellat, 
         rerum quia eaque placeat? Aliquam, voluptate numquam!',
         category_id INTEGER REFERENCES categories(category_id) ON DELETE SET NULL,
+        sold INTEGER DEFAULT 0,
         price DECIMAL(10, 2) NOT NULL,
-        stock_quantity INTEGER NOT NULL,
         rating DECIMAL(2, 1) DEFAULT NULL,
         thumbnail VARCHAR(255) DEFAULT NULL);""",
     "orders": """
         CREATE TABLE IF NOT EXISTS orders (order_id SERIAL PRIMARY KEY,
         product_id INTEGER REFERENCES products(product_id) ON DELETE SET NULL,
         user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
-        quantity INTEGER NOT NULL,
         status VARCHAR(50) DEFAULT 'Pending',
         order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"""
 }
@@ -94,8 +93,8 @@ cursor = conn.cursor()
 cursor.execute("SELECT login FROM users WHERE login = %s", (alogin,))
 if not cursor.fetchone():
     hashed_password = pwd_context.hash(apassword)
-    cursor.execute("INSERT INTO users (login, password, name) VALUES (%s, %s, %s)",
-                    (alogin, hashed_password, 'Administrator'))
+    cursor.execute("INSERT INTO users (login, password, namem role) VALUES (%s, %s, %s)",
+                    (alogin, hashed_password, 'Administrator', 'admin'))
     conn.commit()
 cursor.close()
 conn.close()
@@ -118,10 +117,14 @@ class OrderCreate(BaseModel):
 
 class ProductCreate(BaseModel):
     product_name: str
+    product_description: str
     price: float
-    stock_quantity: int
     rating: float = 0.0
     thumbnail: str = ""
+    token: str
+
+class OrderItem(BaseModel):
+    product_id: int
     token: str
 
 class ResetPassword(BaseModel):
@@ -142,7 +145,6 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
-
 
 def validate_password(password: str) -> {str, bool}:
     if len(password) < 8:
@@ -181,6 +183,7 @@ async def register(user: UserCreate):
         return JSONResponse(content={"message": "User registered successfully", "success": True})
     except Exception as e:
         conn.rollback()
+        print(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     finally:
         cursor.close()
@@ -215,6 +218,7 @@ async def delete_account(user: UserLogin):
         return JSONResponse(content={"message": "Account deleted successfully"})
     except Exception as e:
         conn.rollback()
+        print(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     finally:
         cursor.close()
@@ -222,14 +226,11 @@ async def delete_account(user: UserLogin):
 
 @app.post('/user', status_code=status.HTTP_200_OK)
 async def get_user(token: Token):
-    conn = get_connection()
-    cursor = conn.cursor()
     try:
         payload = jwt.decode(token.token, SECRET_KEY, algorithms=[ALGORITHM])
         return JSONResponse(content={'login': payload['login'], 'id': payload['id'], 'role': payload['role'], 'name': payload['name'], 'registered_at': payload['registered_at']}, status_code=status.HTTP_200_OK)
-    finally:
-        cursor.close()
-        conn.close()
+    except jwt.JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
 @app.get('/products', status_code=status.HTTP_200_OK)
 async def get_products():
@@ -239,10 +240,10 @@ async def get_products():
         cursor.execute("SELECT COUNT(*) FROM products")
         total = cursor.fetchone()[0]
         
-        cursor.execute("SELECT product_id, product_name, price, stock_quantity, rating, thumbnail, product_description FROM products")
+        cursor.execute("SELECT product_id, product_name, price, rating, thumbnail, product_description, sold FROM products")
         products = cursor.fetchall()
         products_list = [{"product_id": p[0], "product_name": p[1], "price": float(p[2]),
-                        "stock_quantity": p[3], "rating": float(p[4]), "thumbnail": p[5], "product_description": p[6]} for p in products]
+                        "rating": float(p[3]), "thumbnail": p[4], "product_description": p[5], "sold": p[6]} for p in products]
         return JSONResponse(content={"products": products_list, "total": total}, status_code=status.HTTP_200_OK)
     finally:
         cursor.close()
@@ -260,6 +261,7 @@ async def get_categories():
         return JSONResponse(content=categories_list, status_code=status.HTTP_200_OK)
     except Exception as e:
         conn.rollback()
+        print(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     finally:
         cursor.close()
@@ -270,14 +272,15 @@ async def get_products_of_category(category_id: int):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT product_id, product_name, price, stock_quantity, rating, thumbnail, product_description FROM products WHERE category_id = %s", [category_id,])
+        cursor.execute("SELECT product_id, product_name, price, rating, thumbnail, product_description, sold FROM products WHERE category_id = %s", [category_id,])
         productsofcategory = cursor.fetchall()
         prodcuts_list = [{"product_id": p[0], "product_name": p[1], "price": float(p[2]),
-                        "stock_quantity": p[3], "rating": float(p[4]), "thumbnail": p[5], "product_description": p[6]} for p in productsofcategory]
+                         "rating": float(p[3]), "thumbnail": p[4], "product_description": p[5], "sold": p[6]} for p in productsofcategory]
         conn.commit()
         return JSONResponse(content=prodcuts_list, status_code=status.HTTP_200_OK)
     except Exception as e:
         conn.rollback()
+        print(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     finally:
         cursor.close()
@@ -308,6 +311,66 @@ async def reset_password(request: ResetPassword):
             return JSONResponse(content={"message": "Password updated successfully"})
     except Exception as e:
         conn.rollback()
+        print(e)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.post('/orderitem', status_code=status.HTTP_200_OK)
+async def order_item(orderitem: OrderItem):
+    try:
+        payload = jwt.decode(orderitem.token, SECRET_KEY, algorithms=[ALGORITHM])
+        login = payload['login']
+    except jwt.JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE products SET sold = 1 WHERE product_id = %s", (orderitem.product_id,))
+        conn.commit()
+        cursor.execute("INSERT INTO orders (product_id, user_id) VALUES (%s, %s)", (orderitem.product_id, payload['id'],))
+        conn.commit()
+        return JSONResponse(content={'message': 'Product ordered successfully'}, status_code=status.HTTP_200_OK)
+    except Exception as e:
+        conn.rollback()
+        print(e)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.post('/ordersofuser', status_code=status.HTTP_200_OK)
+async def orders_of_user(token: Token):
+    try:
+        payload = jwt.decode(token.token, SECRET_KEY, algorithms=[ALGORITHM])
+        login = payload['login']
+    except jwt.JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT product_id, order_date FROM orders WHERE user_id = %s", (payload['id'],))
+        result = cursor.fetchall()
+        pids = []
+        for o in result:
+            pids.append(o[0])
+        query = sql.SQL(
+            "SELECT product_id, product_name, price, rating, thumbnail, product_description, sold "
+            "FROM products WHERE product_id IN ({})"
+        ).format(sql.SQL(',').join(sql.Placeholder() * len(pids)))
+
+        cursor.execute(query, pids)
+        products = cursor.fetchall()
+        for i in result:
+            orders_list = [{"product_id": p[0], "product_name": p[1], "price": float(p[2]),
+                        "rating": float(p[3]), "thumbnail": p[4], "product_description": p[5], "sold": p[6], "order_date": i[1].isoformat()} for p in products]
+        return JSONResponse(content=orders_list, status_code=status.HTTP_200_OK)
+    except Exception as e:
+        conn.rollback()
+        print(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     finally:
         cursor.close()
@@ -360,6 +423,7 @@ async def delete_account(user_id: int, token: Token):
         conn.commit()
     except Exception as e:
         conn.rollback()
+        print(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     finally:
         cursor.close()
@@ -387,6 +451,7 @@ async def ban_user(token: Token, user_id: int):
         return JSONResponse(content={"message": "User banned successfully", "user_id": user_id}, status_code=status.HTTP_200_OK)
     except Exception as e:
         conn.rollback()
+        print(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     finally:
         cursor.close()
@@ -414,6 +479,7 @@ async def unban_user(token: Token, user_id: int):
         return JSONResponse(content={"message": "User unbanned successfully", "user_id": user_id}, status_code=status.HTTP_200_OK)
     except Exception as e:
         conn.rollback()
+        print(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     finally:
         cursor.close()
@@ -493,12 +559,13 @@ async def add_product(product: ProductCreate):
     cursor.close()
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT INTO products (product_name, price, stock_quantity, rating, thumbnail) VALUES (%s, %s, %s, %s, %s)",
-                        (product.product_name, product.price, product.stock_quantity, product.rating, product.thumbnail))
+        cursor.execute("INSERT INTO products (product_name, price, rating, thumbnail, product_description) VALUES (%s, %s, %s, %s, %s)",
+                        (product.product_name, product.price, product.rating, product.thumbnail, product.product_description))
         conn.commit()
         return JSONResponse(content={"message": "Product added successfully", "product_id": cursor.lastrowid})
     except Exception as e:
         conn.rollback()
+        print(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     finally:
         cursor.close()
@@ -516,8 +583,8 @@ async def delete_product(product: ProductDelete):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     conn = get_connection()
     cursor = conn.cursor()
-    result = cursor.execute("SELECT product_id FROM products WHERE product_id = %s", (product.product_id,))
-    if not result.fetchone():
+    cursor.execute("SELECT product_id FROM products WHERE product_id = %s", (product.product_id,))
+    if not cursor.fetchone():
         cursor.close()
         conn.close()
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
@@ -529,6 +596,7 @@ async def delete_product(product: ProductDelete):
         return JSONResponse(content={"message": "Product deleted successfully", "product_id": product.product_id})
     except Exception as e:
         conn.rollback()
+        print(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     finally:
         cursor.close()

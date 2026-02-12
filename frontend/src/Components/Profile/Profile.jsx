@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import './Profile.css';
 import axios from '../../axios.js';
 import { getAccessToken } from '../../cookie.js';
@@ -13,8 +13,12 @@ function Profile() {
     const [repeatCurrentPassword, setRepeatCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
 
-    const [products, setProducts] = useState([{}]);
+    const [toDelete, setToDelete] = useState(1);
+
+    const [orders, setOrders] = useState([{}]);
     const [loadingProducts, setLoadingProducts] = useState(false);
+
+    const [products, setProducts] = useState([{}]);
 
     const [currentPassType, setCurrentPassType] = useState(true);
     const [repeatCurrentPassType, setRepeatCurrentPassType] = useState(true);
@@ -22,6 +26,19 @@ function Profile() {
 
     const roles_icons_colors = ['supervisor_account:red', 'person:blue', 'person:green']
     const rolesindex = ['admin', 'super', 'user']
+
+    const [productName, setProductName] = useState("");
+    const [productDesc, setProductDesc] = useState("");
+    const [price, setPrice] = useState("");
+    const [rating, setRating] = useState("");
+
+    function formatDateDDMMYYYY(isoString) {
+        const date = new Date(isoString);
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        return `${day}.${month}.${year}`;
+    }
 
     useEffect(() => {
         if (getAccessToken() === undefined) {
@@ -40,12 +57,11 @@ function Profile() {
         .catch(e => {
             console.error(e);
         });
-        setLoadingProducts(true);
-        axios.get('/products')
+                axios.get('/products')
         .then(res => {
-            const sorted = [...res.data.products].sort((a, b) => b.price - a.price).slice(0, 20);
-            setProducts(sorted);
+            const sorted = [...res.data.products].sort((a, b) => a.product_name.localeCompare(b.product_name));
             console.log(sorted);
+            setProducts(sorted);
             setLoadingProducts(false);
         })
         .catch(e => {
@@ -53,6 +69,27 @@ function Profile() {
             setLoadingProducts(false);
         });
     }, []);
+
+    useEffect(() => {
+        if (user.role === 'user') {
+            setLoadingProducts(true);
+            axios.post('/ordersofuser', 
+                {
+                    token: getAccessToken()
+                }
+            )
+            .then(res => {
+                const sorted = [...res.data].sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
+                setOrders(sorted);
+                console.log(sorted);
+                setLoadingProducts(false);
+            })
+            .catch(e => {
+                console.error(e);
+                setLoadingProducts(false);
+            });
+        }
+    }, [user]);
 
     async function changePassword() {
         let pwarn = document.querySelector('.profilepage .maincontainer .right .resetpw .pwarn');
@@ -106,6 +143,51 @@ function Profile() {
             pwarn.classList.add('anim');
         })
     }
+
+    function addProduct() {
+        if (getAccessToken() === undefined) {
+            alert('Session expired or not logged in!\nYou will be redirected to the Login page.');
+            navigate('/login');
+        }
+        axios.post('/admin/products/add',
+            {
+                token: getAccessToken(),
+                product_name: productName,
+                product_description: productDesc,
+                price: Number.parseInt(price),
+                rating: Number.parseFloat(rating)
+            }
+        )
+        .then(res => {
+            alert(res.data.message);
+        })
+        .catch(e => {
+            console.error(e);
+        });
+        setProductName("");
+        setProductDesc("");
+        setPrice("");
+        setRating("");       
+    }
+
+    function deleteProduct() {
+        if (getAccessToken() === undefined) {
+            alert('Session expired or not logged in!\nYou will be redirected to the Login page.');
+            navigate('/login');
+        }
+        axios.delete('/admin/products/delete',
+            {
+                token: getAccessToken(),
+                product_id: Number.parseInt(document.getElementById("productid").value)
+            }
+        )
+        .then(res => {
+            alert(res.data.message);
+        })
+        .catch(e => {
+            console.error(e);
+        });     
+    }
     
     return (
         <div className="profilepage">
@@ -141,11 +223,13 @@ function Profile() {
                     </div>
                 </div>
             </div>
-            <div className={user.role === 'user' ? 'orderscontainer' : 'addproduct'}>
+            {user.role === 'user'
+            ?
+            <div className="orderscontainer">
                 <p>Orders:</p>
                 <div className="line"></div>
                 <div className="orders">
-                    {products.map(p => {
+                    {orders.map(p => {
                     if (p && Object.keys(p).length === 0) return ( <div key="0" style={{display: "none"}}></div> )
                     const rating = Math.round(p.rating * 2)/2;
                     let fullStars = [];
@@ -189,12 +273,60 @@ function Profile() {
                                         attach_money
                                     </span>
                                 </div>
+                                <span>
+                                    Ordered {formatDateDDMMYYYY(p.order_date)}
+                                </span>
                             </p>
                         </div>
                     );
                     })}
                 </div>
             </div>
+            :
+            <div className="adminpanel">
+                <p>Admin panel:</p>
+                <div className="container">
+                    <div className="addproduct">
+                        <p>Add product</p>
+                        <input type="text" placeholder="Product name" value={productName} onChange={(e) => {setProductName(e.target.value)}}/>
+                        <textarea placeholder="Product description" value={productDesc} onChange={(e) => {setProductDesc(e.target.value)}}></textarea>
+                        <input type="number" min={0} maxLength="3" placeholder="Price $ 0-999" value={price} onChange={(e) => {
+                            let v = e.target.value;
+                            if (v.length > 3) {
+                                e.target.value = e.target.value.slice(0, 3);
+                                return;
+                            }
+                            setPrice(v);
+                        }}/>
+                        <input type="number" max={5} min={0} step={0.5} placeholder="Rating 0-5" value={rating} onChange={(e) => {
+                            let v = e.target.value;
+                            if (v < 0) {
+                                e.target.value = 0;
+                                return;
+                            }
+                            else if (v > 5) {
+                                e.target.value = 5;
+                                return;
+                            }
+                            setRating(v);
+                        }}/>
+                        <button onClick={() => {addProduct()}}>Add</button>
+                    </div>
+                    <div className="deleteproduct">
+                        <p>Delete product</p>
+                        <select id="productid">
+                            <option value="">Choose</option>
+                            {products.map(p => {
+                                return (
+                                    <option value={p.product_id}>{p.product_name}</option>
+                                );
+                            })}
+                        </select>
+                        <button onClick={() => {deleteProduct()}}>Delete</button>
+                    </div>
+                </div>
+            </div>
+            }
         </div>
     )
 }

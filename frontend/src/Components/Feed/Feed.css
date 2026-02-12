@@ -6,7 +6,6 @@
     darkest - 143D60 rgb(20, 61, 96)
 */
 
-
 #root {
     height: fit-content;
 }
@@ -18,7 +17,7 @@
     align-items: center;
     position: relative;
     z-index: 0;
-    width: 100wh;
+    width: 100vw;
     height: fit-content;
     min-height: 100vh;
 }
@@ -284,12 +283,8 @@
         box-shadow: 0px 0px 20px rgba(255, 255, 255, 1);
     }
 
-    .feed .catalogs .row .catalog.blur {
-        filter: blur(2px);
-    }
-
     .feed .catalogs .row .catalog span {
-        transform: scale(5);
+        transform: scale(4);
     }
 
     .feed .catalogs .row .catalog .name {
@@ -443,24 +438,6 @@
         transition: .15s;
     }
 
-    .feed .products .productcard.active {
-        animation: productcardflipover .15s linear 1 forwards;
-    }
-
-    @keyframes productcardflipover {
-        from {
-            transform: rotate3d(0, 1, 0, 0deg);
-        }
-        to {
-            transform: rotate3d(0, 1, 0, 180deg);
-        }
-    }
-
-    .feed .products .productcard:hover {
-        transform: scale(1.01);
-        box-shadow: 0 12px 10px rgba(255,255,255,0.4);
-    }
-
     .feed .products .productcard img {
         width: 100%;
         aspect-ratio: 3/4;
@@ -469,10 +446,6 @@
     .feed .products .productcard .name {
         font-weight: 600;
         cursor: pointer;
-    }
-
-    .feed .products .productcard .name:hover {
-        text-decoration: underline;
     }
 
     .feed .products .productcard .price {
@@ -500,8 +473,9 @@
     }
 
     .feed .products .productcard .price span button {
-        padding: 0px 10px;
-        background-color: white;    
+        padding: 4px 10px;
+        background-color: white;
+        cursor: pointer;
     }
 
     .feed .products .productcard .price span button:nth-child(1) {
@@ -569,9 +543,93 @@
         background-color: white;
         z-index: 2;
         transition: .3s ease;
+        overflow-y: scroll;
+        overflow-x: hidden;
     }
 
     .feed .cartoverlay.active {
         left: 0px;
+    }
+
+    .feed .cartoverlay > .loadoverlay {
+        width: 100%;
+        height: 100%;
+    }
+
+    .feed .cartoverlay .productcard {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        border: 1px solid black;
+        height: 300px;
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 10px 10px rgba(255,255,255,0.4);
+        transition: .15s;
+        width: 100%;
+    }
+
+    .feed .cartoverlay .productcard .productright {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .feed .cartoverlay .productcard img {
+        width: 50%;
+        aspect-ratio: 3/4;
+    }
+
+    .feed .cartoverlay .productcard .name {
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .feed .cartoverlay .productcard .price {
+        font-weight: 300;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        height: fit-content;
+        margin-top: auto;
+    }
+
+    .feed .cartoverlay .productcard .price div {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .feed .cartoverlay .productcard .price span {
+        display: flex;
+        flex-direction: row;
+        width: fit-content;
+        height: fit-content;
+        gap: 10px;
+    }
+
+    .feed .cartoverlay .productcard .price span button {
+        padding: 0px 10px;
+        background-color: white;
+        cursor: pointer;
+    }
+
+    .feed .cartoverlay .productcard .price span button:nth-child(1) {
+        background-color: rgb(221, 235, 157);
+    }
+
+    .feed .cartoverlay .productcard .quantity {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .feed .cartoverlay .productcard .rating {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 1px;
     }
 }

@@ -18,7 +18,6 @@ function Category() {
     const [loadingProducts, setLoadingProducts] = useState(false);
     const [loadingCategories, setLoadingCategories] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [cartOverlay, setCartOverlay] = useState(false);
     const [hideHeader, setHideHeader] = useState(false);
     const [headerClasses, setHeaderClasses] = useState("");
     const lorem = "Lorem ipsum dolor sit amet consectetur adipisicing elit. Veritatis tenetur culpa debitis provident unde architecto rerum sit sunt dolores repudiandae mollitia facilis labore ipsa beatae, soluta in? Porro, ratione quos!";
@@ -115,24 +114,28 @@ function Category() {
         }
     }, [sortByValue, sortDown]);
 
+    function order(pid) {
+        if (getAccessToken() === undefined) {
+            alert('Session expired or not logged in!\nYou will be redirected to the Login page.');
+            navigate('/login');
+        }
+        axios.post('/orderitem',
+            {
+                token: getAccessToken(),
+                product_id: pid
+            }
+        )
+        .then(res => {
+            alert(res.data.message);
+            window.location.reload();
+        })
+        .catch(e => {
+            console.error(e);
+        });
+    }
+
     return (
         <div className="feed">
-            <div className={cartOverlay ? "cartoverlay active" : "cartoverlay"} id="cartoverlay">
-                CART
-            </div>
-            <span className={cartOverlay ? "material-icons cart active" : "material-icons cart"} onClick={() => {
-                setCartOverlay(!cartOverlay);
-                let headerclasses = "";
-                if (!cartOverlay) {
-                    headerclasses = headerclasses + " shrink";
-                }
-                if (hideHeader) {
-                    headerclasses = headerclasses + " hide";
-                }
-                setHeaderClasses(headerclasses);
-            }}>
-                shopping_cart
-            </span>
             <div className={"header" + headerClasses}>
                 <span className="logo"><a href="/feed">RAMA</a></span>
                 <span className="center">
@@ -198,7 +201,7 @@ function Category() {
                             })}
                      </div>
             </div>
-            <div className={cartOverlay ? "search shrink" : "search"} id="search">
+            <div className="search" id="search">
                 <input id="search" type="text" placeholder="Search here..." onChange={(e) => {setSearchQuery(e.target.value)}}/>
                 <button onClick={() => {
                     document.getElementById("search").scrollIntoView({ behavior: 'smooth' });
@@ -232,7 +235,7 @@ function Category() {
                     </span>
                 </span>
             </div>
-            <div className={cartOverlay ? "products shrink" : "products"}>
+            <div className="products">
                 <div className={loadingProducts ? "loadoverlay active" : "loadoverlay"}>
                     <div className="spinner"></div>
                 </div>
@@ -253,10 +256,6 @@ function Category() {
                                 navigate('/product?pid=' + p.product_id);
                             }, 150)}}>{p?.product_name?.length > 28 ? p?.product_name?.slice(0, 28).trim() + "..." : p?.product_name}</p>
                             <p className="description">{p.product_description.slice(0, 120)}</p>
-                            <p className="quantity">{p.stock_quantity} pcs.
-                                <span className="material-symbols-outlined">
-                                    warehouse
-                                </span></p>
                             <p className="rating">
                                 {fullStars.length !== 0
                                 ? fullStars.map(s => {
@@ -284,13 +283,10 @@ function Category() {
                                         attach_money
                                     </span>
                                 </div>
-                                <span className="buyncart">
-                                    <button>Buy</button>
-                                    <button>
-                                    <span className="material-icons">
-                                        add_shopping_cart
-                                    </span></button>
-                                </span></p>
+                                <span>
+                                    <button onClick={() => {order(p.product_id)}}>Order</button>
+                                </span>
+                            </p>
                         </div>
                     );
                     })}
