@@ -16,9 +16,9 @@ git clone https://github.com/Kinshikinai/projectC.git
 
 ## To run locally
 You will need to have install these guys:
-1. **Node.js**
-2. **Python 3.14.x**
-3. **pgAdmin 4**
+- **Node.js**
+- **Python 3.14.x**
+- **pgAdmin 4**
 Then you need to:
 1. Go to folder `frontend`
 ```bash
@@ -78,3 +78,5 @@ uvicorn app.main:app --reload
 
 ## To run using Docker
 *No installations to local machine needed*
+
+1. 
