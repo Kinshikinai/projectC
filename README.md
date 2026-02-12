@@ -46,7 +46,10 @@ C:/Users/yourusername/path-to-git-repo/backend/projectCvenv/Scripts/activate.bat
 cd frontend
 npm start
 ```
-6. Before starting backend, we need to setup our database.
+It should show something like:
+<img src="screenshots/frontend.png" width="500">
+
+6. Before starting backend, we need to setup our database:
 - Setup pgAdmin4 server
 - Open pgAdmin4
 - Create your own user or continue with `postgres`
@@ -57,7 +60,16 @@ npm start
 - In `Format` choose `Plain`
 - Select the file located in `backend/app/projectCdb.sql`
 - Click `Restore` (choose your user in role, if you created one other than `postgres`)
-Starting backend:
+
+7. Edit files in `backend/app`:
+- Open the `backend/app/db.py` file
+- Set `host` to `localhost`
+- Set `database` to `projectC` or the name you set for database
+- Set `user` to `postgres` or the name os user you created
+- Set `password` to password you set while pgAdmin4 setup
+- Let the port remain the same
+
+8. Starting backend:
 ```bash
 cd backend
 uvicorn app.main:app --reload
