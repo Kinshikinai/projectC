@@ -57,7 +57,7 @@ It should show something like:
 - Go to only `server` you have -> `databases`.
 - Left-click and choose `Create` -> `Database` (Alt + Shift + N)
 - Name it `porjectC` or any other name
-- Left-click on database you just created and choose `Restore`c
+- Left-click on database you just created and choose `Restore`
 - In `Format` choose `Plain`
 - Select the file located in `backend/app/projectCdb.sql`
 - Click `Restore` (choose your user in role, if you created one other than `postgres`)
