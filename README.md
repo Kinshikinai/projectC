@@ -56,6 +56,7 @@ npm start
 - Left-click on database you just created and choose `Restore`
 - In `Format` choose `Plain`
 - Select the file located in `backend/app/projectCdb.sql`
+- Click restore (choose your user in role, if you created one other than `postgres`)
 Starting backend:
 ```bash
 cd backend
