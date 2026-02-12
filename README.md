@@ -19,6 +19,7 @@ You will need to have install these guys:
 - **Node.js**
 - **Python 3.14.x**
 - **pgAdmin 4**
+
 Then you need to:
 1. Go to folder `frontend`
 ```bash
