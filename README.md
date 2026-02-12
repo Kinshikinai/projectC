@@ -77,6 +77,8 @@ uvicorn app.main:app --reload
 ```
 <img src="screenshots/backend.png" style="width: 100%">
 
+9. Go to [frontend](http://localhost:3000)
+
 ## To run using Docker
 *No installations to local machine needed*
 
