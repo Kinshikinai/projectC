@@ -141,7 +141,6 @@ function Feed() {
                     <ul>
                         <li><a href="/feed" onClick={(e) => {e.preventDefault();if (products.length > 8) document.getElementById("search").scrollIntoView({ behavior: 'smooth' });}}>Search</a></li>
                         <li><a href="#catalogs" onClick={(e) => {e.preventDefault();window.scrollTo(XMLDocument, document.getElementById('catalogs').scrollHeight - 230)}}>Categories</a></li>
-                        <li><a href="/supp" onClick={(e) => {e.preventDefault();navigate('/supp')}}>Support</a></li>
                     </ul>
                 </span>
                 <span className="profile">
