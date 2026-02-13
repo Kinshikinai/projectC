@@ -242,7 +242,7 @@ function Profile() {
                     return (
                         <div key={p.product_id} className="order" id={"order" + p.product_id}>
                             <img src="/src/imgs/CSatHFW_Limp_Bizkit.jpg" alt="" />
-                            <p className="name">{p?.product_name?.length > 28 ? p?.product_name?.slice(0, 28).trim() + "..." : p?.product_name}</p>
+                            <p className="name">{p?.product_name}</p>
                             <p className="description">{p.product_description.slice(0, 120)}</p>
                             <p className="quantity">{p.stock_quantity} pcs.
                                 <span className="material-symbols-outlined">
